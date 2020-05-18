@@ -171,6 +171,8 @@ class SortedArray extends Array {
         // create compareFn property as non-enumerable and non-changable so poorly written
         // array iteration code doesn't see the compareFn function as an array element
         Object.defineProperty(this, "compareFn", {value: compareFn});
+
+        // now add initial elements (if there are any)
         if (!hasNumber) {
             this.addMany(iterable);
         }
