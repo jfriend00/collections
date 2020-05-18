@@ -134,13 +134,12 @@ class SortedArray extends Array {
             super();
             // handle various other calling conventions
             if (!isIterable(iterable)) {
-                if (typeof iterable !== "object") {
-                    // first argument wasn't a number and wasn't an iterable, so it has to be an object here
-                    throw new TypeError('Expecting iterable or object as first argument to SortedArray() constructor');
-                }
                 options = iterable;
                 iterable = [];
             }
+        }
+        if (typeof options !== "object") {
+            throw new TypeError('Expecting iterable or object as first argument to SortedArray() constructor');
         }
 
         let compareFn;
