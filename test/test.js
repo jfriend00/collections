@@ -89,33 +89,25 @@ function rand(max) {
 const bigLen = 10_000_000;
 const bigMax = 100_000_000;
 
-const { Bench } = require('../../measure');
-
 function addBunch() {
     let temp = [];
     let bigArr = new SortedArray();
     for (let i = 0; i < bigLen; i++) {
         temp.push(rand(bigMax));
     }
-    let b1 = new Bench().markBegin();
     bigArr.addMany(temp);
-    b1.markEnd();
 
-    let b2 = new Bench().markBegin();
     bigArr.add(rand(bigMax));
-    b2.markEnd();
 
     for (let i = 1; i < bigArr.length; i++) {
         if (bigArr[i] < bigArr[i-1]) {
             throw new Error(`Found at index ${i}, ${bigArr[i]} is not greater than ${bigArr[i-1]}`);
         }
     }
-
-    console.log(`sortAtEnd             ${b1.formatSec(3)}`);
-    console.log(`sortOneIncrementally  ${b2.formatSec(3)}`);
 }
 
 
+console.log("Processing large array...")
 addBunch();
 
 console.log("All tests passed");
