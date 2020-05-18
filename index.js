@@ -1,0 +1,62 @@
+// subclass of a Map where each value is an Array of values
+// Rather than .set(), you call .add(key, val) to add this val
+// to the array for that key.
+class MapArray extends Map {
+    add(key, val) {
+        let array = this.get(key);
+        if (array) {
+            array.push(val);
+        } else {
+            array = [val];
+            this.set(key, array);
+        }
+    }
+
+    // remove a specific value from the array for a specific key
+    // if all is true, then remove all occurrences of that value in the array
+    // returns true/false based on whether something was removed or not
+    remove(key, val, all = false) {
+        const array = this.get(key);
+        if (array) {
+            let index, found = false;
+            while (index = array.indexOf(val) !== -1) {
+                found = true;
+                array.splice(index, 1);
+                if (!all) {
+                    break;
+                }
+            }
+            return found;
+        } else {
+            return false;
+        }
+    }
+}
+
+// subclass of a Map where each value is a Set of values
+// Rather than .set(), you call .add(key, val) to add this value
+// to the Set for that key
+class MapSet extends Map {
+    add(key, val) {
+        let set = this.get(key);
+        if (set) {
+            set.add(val);
+        } else {
+            set = new Set([val]);
+            this.set(key, set);
+        }
+    }
+
+    // remove a specific value from the set for a specific key
+    // returns true/false based on whether something was removed or not
+    remove(key, val) {
+        const set = this.get(key);
+        if (set) {
+            return set.delete(val);
+        }
+        return false;
+    }
+}
+
+
+module.exports = { collectionMap };
