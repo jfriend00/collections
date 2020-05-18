@@ -86,5 +86,98 @@ class MapSet extends Map {
     }
 }
 
+// comparison function returns:
+//    < 0 then a < b
+//      0 then a === b
+//    > 0 then a > b
+function compareNumbersAscending(a, b) {
+    return a - b;
+}
 
-module.exports = { MapArray, MapSet };
+function compareNumbersDescending(a, b) {
+    return b - a;
+}
+
+function compareLocaleAscending(a, b) {
+    return a.localeCompare(b);
+}
+
+function compareLocaleDescending(a, b) {
+    return b.localeCompare(a);
+}
+
+
+// constantly sorted array
+class SortedArray extends Array {
+    constructor(data = [], options = {}) {
+        super();
+        // allow new SortedArray(options)
+        if (!Array.isArray(data)) {
+            options = data;
+            data = [];
+        }
+        // insert constructor data into our array
+        this.push(...data);
+        if (typeof options.sort === "function") {
+            this.compareFn = options.sort;
+        } else if (typeof options.sort === "string") {
+            switch(options.sort) {
+                case "numbersAscending":
+                    this.compareFn = compareNumbersAscending;
+                    break;
+                case "numbersDescending":
+                    this.compareFn = compareNumbersDescending;
+                    break;
+                case "stringAscending":
+                    this.compareFn = compareLocaleAscending;
+                    break;
+                case "stringDescending":
+                    this.compareFn = compareLocaleDescending;
+                    break;
+                default:
+                    throw new TypeError(`Unexpected options.sort value: ${options.sort}`);
+            }
+        } else {
+            // default sort comparison is ascending numbers
+            this.compareFn = compareNumbersAscending;
+        }
+
+        this.sort(this.compareFn);
+    }
+    add(item) {
+        // insertion sort
+        let rangeHigh = this.length;
+        let rangeLow = 0;
+        let index;
+        while (rangeLow < rangeHigh) {
+            index = Math.floor((rangeLow + rangeHigh) / 2);
+            let comp = this.compareFn(item, this[index]);
+            if (comp < 0) {
+                // item < arrayVal
+                rangeHigh = index;
+            } else if (comp > 0){
+                // item > arrayVal
+                rangeLow = index + 1;
+            } else {
+                // item === arrayVal, insert it right here
+                rangeLow = index;
+                break;
+            }
+        }
+        // insert this item
+        this.splice(rangeLow, 0, item);
+        return rangeLow;
+    }
+    addMany(iterable) {
+        for (let item of iterable) {
+            this.push(item);
+        }
+        this.sort(this.compareFn);
+    }
+    toArray() {
+        return Array.from(this);
+    }
+}
+
+
+module.exports = { MapArray, MapSet,  SortedArray };
