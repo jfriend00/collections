@@ -1,4 +1,5 @@
 const { MapSet, MapArray} = require('../index.js');
+const assert = require('assert').strict;
 
 let testData = [
     ["a", "1"],
@@ -18,15 +19,16 @@ let ma = new MapArray();
 for (let [key, val] of testData) {
     ma.add(key, val);
 }
-console.log(ma);
 ma.remove("b", "4");
 ma.remove("b", "1", true);
-console.log(ma);
+assert.deepEqual(ma.get("a"), ["1", "1", "2", "3", "4"], 'a keys not as expected on MapArray');
+assert.deepEqual(ma.get("b"), ["2", "3", "4"], 'b keys not as expected on MapArray');
 
 let ms = new MapSet();
 for (let [key, val] of testData) {
     ms.add(key, val);
 }
-console.log(ms);
 ms.remove("b", "4");
-console.log(ms);
+assert.deepEqual(Array.from(ms.get("a")), ["1", "2", "3", "4"], 'a keys not as expected on MapSet');
+assert.deepEqual(Array.from(ms.get("b")), ["1", "2", "3"], 'b keys not as expected on MapSet');
+console.log("All tests passed")
