@@ -35,6 +35,16 @@ class MapArray extends Map {
             return false;
         }
     }
+
+    // tells you if a key has a particular value in its collection
+    hasVal(key, val) {
+        const array = this.get(key);
+        if (array) {
+            return array.includes(val);
+        } else {
+            return false;
+        }
+    }
 }
 
 // subclass of a Map where each value is a Set of values
@@ -63,6 +73,16 @@ class MapSet extends Map {
             return set.delete(val);
         }
         return false;
+    }
+
+    // tells you if a key has a particular value in its collection
+    hasVal(key, val) {
+        const set = this.get(key);
+        if (set) {
+            return set.has(val);
+        } else {
+            return false;
+        }
     }
 }
 
