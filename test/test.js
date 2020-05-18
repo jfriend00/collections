@@ -86,10 +86,7 @@ function rand(max) {
     return Math.floor(Math.random() * max);
 }
 
-const bigLen = 10_000_000;
-const bigMax = 100_000_000;
-
-function addBunch() {
+function addBunchMany(bigLen, bigMax) {
     let temp = [];
     let bigArr = new SortedArray();
     for (let i = 0; i < bigLen; i++) {
@@ -97,7 +94,16 @@ function addBunch() {
     }
     bigArr.addMany(temp);
 
-    bigArr.add(rand(bigMax));
+    console.log(`finished .addMany() of ${bigLen} items`)
+
+    const numIndividual = bigLen / 5000;
+
+    for (let i = 0; i < numIndividual; i++) {
+        if (i && i % 50 === 0) {
+            console.log(`inserting individually into large array ${i} of ${numIndividual}`);
+        }
+        bigArr.add(rand(bigMax));
+    }
 
     for (let i = 1; i < bigArr.length; i++) {
         if (bigArr[i] < bigArr[i-1]) {
@@ -106,8 +112,25 @@ function addBunch() {
     }
 }
 
+function addBunchIndividual(bigLen, bigMax) {
+    let bigArr = new SortedArray();
+    for (let i = 0; i < bigLen; i++) {
+        if (i && i % 1000 === 0) {
+            console.log(`processing ${i} of ${bigLen}`);
+        }
+        bigArr.add(rand(bigMax));
+    }
 
-console.log("Processing large array...")
-addBunch();
+    for (let i = 1; i < bigArr.length; i++) {
+        if (bigArr[i] < bigArr[i-1]) {
+            throw new Error(`Found at index ${i}, ${bigArr[i]} is not greater than ${bigArr[i-1]}`);
+        }
+    }
+}
+
+console.log("Processing large array1 ...")
+addBunchMany(5_000_000, 100_000_000);
+console.log("Processing large array2 ...")
+addBunchIndividual(50_000, 100_000_000);
 
 console.log("All tests passed");
