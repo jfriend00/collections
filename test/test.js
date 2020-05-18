@@ -89,6 +89,8 @@ function rand(max) {
 const bigLen = 10_000_000;
 const bigMax = 100_000_000;
 
+const { Bench } = require('../../measure');
+
 function addBunch() {
     let temp = [];
     let bigArr = new SortedArray();
@@ -113,7 +115,6 @@ function addBunch() {
     console.log(`sortOneIncrementally  ${b2.formatSec(3)}`);
 }
 
-const { Bench } = require('../../measure');
 
 addBunch();
 
