@@ -1,6 +1,10 @@
 // subclass of a Map where each value is an Array of values
-// Rather than .set(), you call .add(key, val) to add this val
+// Rather than .set(key, val), you call .add(key, val) to add this val
 // to the array for that key.
+// Note because this is derived from Map and doesn't override any Map methods,
+//   you can get the Array that is the value and manipulate it directly
+// Do not put items in this collection that are not Arrays or
+//   add/remove will not work properly if called on that key
 class MapArray extends Map {
     add(key, val) {
         let array = this.get(key);
@@ -34,8 +38,12 @@ class MapArray extends Map {
 }
 
 // subclass of a Map where each value is a Set of values
-// Rather than .set(), you call .add(key, val) to add this value
+// Rather than .set(key, val), you call .add(key, val) to add this value
 // to the Set for that key
+// Note because this is derived from Map and doesn't override any Map methods,
+//   you can get the Set that is the value and manipulate it directly
+// Do not put items in this collection that are not Sets or
+//   add/remove will not work properly if called on that key
 class MapSet extends Map {
     add(key, val) {
         let set = this.get(key);
