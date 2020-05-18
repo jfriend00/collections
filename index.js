@@ -12,7 +12,7 @@ class MapArray extends Map {
         }
     }
 
-    // remove a specific value from the array for a specific key
+    // remove a specific value from the array for a specific key (removes the first one)
     // if all is true, then remove all occurrences of that value in the array
     // returns true/false based on whether something was removed or not
     remove(key, val, all = false) {
