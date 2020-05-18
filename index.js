@@ -18,8 +18,8 @@ class MapArray extends Map {
     remove(key, val, all = false) {
         const array = this.get(key);
         if (array) {
-            let index, found = false;
-            while (index = array.indexOf(val) !== -1) {
+            let index = 0, found = false;
+            while ((index = array.indexOf(val, index)) !== -1) {
                 found = true;
                 array.splice(index, 1);
                 if (!all) {
@@ -59,4 +59,4 @@ class MapSet extends Map {
 }
 
 
-module.exports = { collectionMap };
+module.exports = { MapArray, MapSet };
