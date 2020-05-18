@@ -106,44 +106,79 @@ function compareLocaleDescending(a, b) {
     return b.localeCompare(a);
 }
 
+function isIterable(obj) {
+  // checks for null and undefined
+  if (obj == null) {
+    return false;
+  }
+  return typeof obj[Symbol.iterator] === 'function';
+}
 
 // constantly sorted array
+// can be called as:
+//    new SortedArray()
+//    new SortedArray(n)
+//    new SortedArray(n, options)
+//    new SortedArray(iterable)
+//    new SortedArray(options)
+//    new SortedArray(iterable, options)
 class SortedArray extends Array {
-    constructor(data = [], options = {}) {
-        super();
-        // allow new SortedArray(options)
-        if (!Array.isArray(data)) {
-            options = data;
-            data = [];
+    // Be careful here because array methods that create new arrays (like .splice() or many others)
+    // will call new SortedArray(n) in an attempt to return an array of our type
+    constructor(iterable = [], options = {}) {
+        // test for new SortedArray(n)
+        const hasNumber = typeof iterable === "number";
+        if (hasNumber) {
+            super(iterable);
+        } else {
+            super();
+            // handle various other calling conventions
+            if (!isIterable(iterable)) {
+                if (typeof iterable !== "object") {
+                    // first argument wasn't a number and wasn't an iterable, so it has to be an object here
+                    throw new TypeError('Expecting iterable or object as first argument to SortedArray() constructor');
+                }
+                options = iterable;
+                iterable = [];
+            }
         }
+
+        let compareFn;
+
         // insert constructor data into our array
-        this.push(...data);
         if (typeof options.sort === "function") {
-            this.compareFn = options.sort;
+            compareFn = options.sort;
         } else if (typeof options.sort === "string") {
             switch(options.sort) {
                 case "numbersAscending":
-                    this.compareFn = compareNumbersAscending;
+                    compareFn = compareNumbersAscending;
                     break;
                 case "numbersDescending":
-                    this.compareFn = compareNumbersDescending;
+                    compareFn = compareNumbersDescending;
                     break;
                 case "stringAscending":
-                    this.compareFn = compareLocaleAscending;
+                    compareFn = compareLocaleAscending;
                     break;
                 case "stringDescending":
-                    this.compareFn = compareLocaleDescending;
+                    compareFn = compareLocaleDescending;
                     break;
                 default:
                     throw new TypeError(`Unexpected options.sort value: ${options.sort}`);
             }
         } else {
             // default sort comparison is ascending numbers
-            this.compareFn = compareNumbersAscending;
+            compareFn = compareNumbersAscending;
         }
-
-        this.sort(this.compareFn);
+        // create compareFn property as non-enumerable and non-changable so poorly written
+        // array iteration code doesn't see the compareFn function as an array element
+        Object.defineProperty(this, "compareFn", {value: compareFn});
+        if (!hasNumber) {
+            this.addMany(iterable);
+        }
     }
+
+    // add a single item
+    // returns the index where it was added
     add(item) {
         // insertion sort
         let rangeHigh = this.length;
@@ -164,18 +199,33 @@ class SortedArray extends Array {
                 break;
             }
         }
-        // insert this item
+        // insert this item in the precise location
         this.splice(rangeLow, 0, item);
         return rangeLow;
     }
+
+    // Add multiple items from an iterable
     addMany(iterable) {
         for (let item of iterable) {
             this.push(item);
         }
-        this.sort(this.compareFn);
+        this.updateSort();
+        return this;
     }
+
+    // get plain array copy of the data
+    // you would not typically need this because the object itself behaves as an array
     toArray() {
         return Array.from(this);
+    }
+
+    // You can use this to sort the whole array after manually manipulating the array
+    // In general, you can just use .add() or .addMany(), and the sort is automatically
+    // maintained, but if you do have a reason to manually manipulate the array,
+    // you can update the sort with this
+    updateSort() {
+        this.sort(this.compareFn);
+        return this;
     }
 }
 
