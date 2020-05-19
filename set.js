@@ -53,7 +53,7 @@ const standardSetMethods = [
     }],
     // determines if this set is a superset of the iterable
     // by determining if every item in the iterable is in this set
-    ["isSuperSetOf", function(iterable) {
+    ["isSupersetOf", function(iterable) {
         for (const item of iterable) {
             if (!this.has(item)) {
                 return false;
@@ -96,7 +96,7 @@ const enhancedSetMethods = [
         return this;
     }],
     // remove the iterable collection from this Set
-    ["deleteCollection", function() {
+    ["deleteCollection", function(iterable) {
         for (const item of iterable) {
             this.delete(item);
         }
@@ -124,8 +124,8 @@ function addMethods(obj, ...lists) {
         for (const [prop, method] of array) {
             // define methods as non-enumerable, non-configurable, non-writable
             // only add it if this property name not found on either the object or the prototype
-            if (!s[prop]) {
-                Object.defineProperty(s, prop, {value: method});
+            if (!obj[prop]) {
+                Object.defineProperty(obj, prop, {value: method});
             }
         }
 }

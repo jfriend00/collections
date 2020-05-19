@@ -174,7 +174,7 @@ class SortedArray extends Array {
 
         // now add initial elements (if there are any)
         if (!hasNumber) {
-            this.addMany(iterable);
+            this.addCollection(iterable);
         }
     }
 
@@ -208,8 +208,16 @@ class SortedArray extends Array {
     }
 
     // Add multiple items from an iterable
-    addMany(iterable) {
-        for (let item of iterable) {
+    addCollection(iterable) {
+        for (const item of iterable) {
+            this.push(item);
+        }
+        this.updateSort();
+        return this;
+    }
+
+    addMany(...elements) {
+        for (const item of elements) {
             this.push(item);
         }
         this.updateSort();
