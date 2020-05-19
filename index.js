@@ -185,6 +185,8 @@ class SortedArray extends Array {
         let rangeHigh = this.length;
         let rangeLow = 0;
         let index;
+        // in this algorithm, we know the target insertion point is between
+        // rangeLow and rangeHigh (including rangeLow, but not including rangeHigh)
         while (rangeLow < rangeHigh) {
             index = Math.floor((rangeLow + rangeHigh) / 2);
             let comp = this.compareFn(item, this[index]);
