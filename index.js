@@ -181,7 +181,7 @@ class SortedArray extends Array {
     // add a single item
     // returns the index where it was added
     add(item) {
-        // insertion sort
+        // binary search for the insertion point in the already sorted array
         let rangeHigh = this.length;
         let rangeLow = 0;
         let index;
