@@ -92,7 +92,7 @@ function addBunchMany(bigLen, bigMax) {
     for (let i = 0; i < bigLen; i++) {
         temp.push(rand(bigMax));
     }
-    bigArr.addMany(temp);
+    bigArr.addCollection(temp);
 
     console.log(`finished .addMany() of ${bigLen} items`)
 
