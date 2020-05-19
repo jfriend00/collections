@@ -70,6 +70,49 @@ const standardSetMethods = [
         }
         return true;
     }],
+
+    // Array-like methods
+
+    // process this set and create a new set from return values
+    ["map", function(fn, thisArg) {
+        const newSet = new this.constructor();
+        for (const item of this) {
+            newSet.add(fn.call(thisArg, item, item, this));
+        }
+        return newSet;
+    }],
+    // see if every item passed the callback test
+    ["every", function(fn, thisArg) {
+        for (const item of this) {
+            if (fn.call(thisArg, item, item, this) === false) {
+                return false;
+            }
+        }
+        return true;
+    }],
+    // if any item gets a true return value from the callback, then return true
+    ["some", function(fn, thisArg) {
+        for (const item of this) {
+            if (fn.call(thisArg, item, item, this) === true) {
+                return true;
+            }
+        }
+        return false;
+    }],
+    // join set items in a string (like array.join())
+    ["join", function(separator) {
+        return Array.from(this).join(separator);
+    }],
+    // make new set of filtered items - return true to keep in the new set
+    ["filter", function(fn, thisArg) {
+        const newSet = new this.constructor();
+        for (const item of this) {
+            if (fn.call(thisArg, item, item, this) === true) {
+                newSet.add(item);
+            }
+        }
+        return newSet;
+    }],
 ];
 
 // As of May 2020, these are not yet on a standards track, but considered useful
@@ -116,6 +159,19 @@ const enhancedSetMethods = [
             }
         }
         return true;
+    }],
+    // Experimental:
+    // Make new set of filtered items - return undefined to drop from result,
+    // return any other value to put that value into the returned set
+    ["filterMap", function(fn, thisArg) {
+        const newSet = new this.constructor();
+        for (const item of this) {
+            let newVal = fn.call(thisArg, item, item, this);
+            if (newVal !== undefined) {
+                newSet.add(newVal);
+            }
+        }
+        return newSet;
     }],
 ];
 
