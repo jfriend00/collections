@@ -133,4 +133,4 @@ addBunchMany(5_000_000, 100_000_000);
 console.log("Processing large array2 ...")
 addBunchIndividual(50_000, 100_000_000);
 
-console.log("All tests passed");
+console.log("MapArray, MapSet and SortedArray tests passed");

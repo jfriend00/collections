@@ -75,4 +75,4 @@ enhanceSet(Set.prototype);
 runData(polyfillData, null, Set);
 runData(enhancedData, null, Set, separateArgs);
 
-console.log("All tests passed.");
+console.log("Set and SetEx method tests passed.");
