@@ -141,4 +141,12 @@ function enhanceSet(s) {
     addMethods(s, enhancedSetMethods);
 }
 
-module.exports = { polyfillSet, enhanceSet };
+class SetEx extends Set {
+    constructor(iterable) {
+        super(iterable);
+    }
+}
+
+enhanceSet(SetEx.prototype);
+
+module.exports = { polyfillSet, enhanceSet, SetEx };
