@@ -29,6 +29,7 @@ const polyfillData = [
     [23, "isDisjointFrom", [1,4,5], false],                 // some overlap
     [24, "isDisjointFrom", [4,5,6], true],                  // no overlap
     [25, "isDisjointFrom", [], true],                       // empty iterable
+    [26, "join", ",", "1,2,3"],
 ];
 
 const separateArgs = new Set(["addMany", "deleteMany"]);
@@ -55,6 +56,51 @@ function runData(data, adderFn, ctor, passAsSeparateArgs = new Set()) {
             throw new Error(`s.${verb} is not a function`);
         }
         const r = passAsSeparateArgs.has(verb) ? s[verb](...arg) : s[verb](arg);
+        if (typeof result === "boolean" || typeof result === "string") {
+            assert(r === result, `testNum ${testNum} failed: got ${r}, expecting ${result}`);
+        } else {
+            assert.deepStrictEqual(Array.from(r), result, `testNum ${testNum} failed: got ${JSON.stringify(Array.from(r))}, expecting ${JSON.stringify(Array.from(result))}`);
+        }
+    }
+}
+
+const callbackData = [
+    // [testNum, verb, fn, result]
+    [100, "map", function(item, item, set) {
+        return item * 2;
+    }, [2,4,6]],
+    [101, "every", function(item, item, set) {
+        return item > 0;
+    }, true],
+    [102, "every", function(item, item, set) {
+        return item > 1;
+    }, false],
+    [103, "some", function(item, item, set) {
+        return item === 2;
+    }, true],
+    [104, "some", function(item, item, set) {
+        return item > 5;
+    }, false],
+    [105, "filter", function(item, item, set) {
+        return item <= 2;
+    }, [1,2]],
+    [106, "filterMap", function(item, item, set) {
+        if (item <= 2) {
+            return item * item;
+        } else {
+            return undefined;
+        }
+    }, [1,4]],
+];
+
+function runCallback(data, adderFn, ctor) {
+    for (const [testNum, verb, fn, result] of data) {
+        const s = new ctor([1,2,3]);
+        adderFn(s);
+        if (typeof s[verb] !== "function") {
+            throw new Error(`s.${verb} is not a function`);
+        }
+        const r = s[verb](fn, this);
         if (typeof result === "boolean") {
             assert(r === result, `testNum ${testNum} failed: got ${r}, expecting ${result}`);
         } else {
@@ -65,6 +111,10 @@ function runData(data, adderFn, ctor, passAsSeparateArgs = new Set()) {
 
 runData(polyfillData, polyfillSet, Set);
 runData(enhancedData, enhanceSet, Set, separateArgs);
+
+// run callback methods
+runCallback(callbackData, enhanceSet, Set);
+
 
 // now run it where all methods are added to the prototype of a SetEx sub-class
 runData(enhancedData, null, SetEx, separateArgs);
