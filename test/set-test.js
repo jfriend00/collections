@@ -1,45 +1,5 @@
-const { polyfillSet, enhanceSet } = require('../index.js');
 const assert = require('assert').strict;
-
-// creates new Set instance composed of items in both set and iterable
-// ["intersection", function(iterable) {
-
-// creates new Set instance as union of both set and iterable
-// ["union", function(iterable) {
-
-// creates new Set of elements in original that are not present in iterable
-// ["difference", function(iterable) {
-
-// set of elements found only in one or the other, but not both
-// ["symmetricDifference", function(iterable) {
-
-// determines if this set is a subset of the iterable
-// by determining if every item in this set is in the iterable
-// ["isSubsetOf", function(iterable) {
-
-// determines if this set is a superset of the iterable
-// by determining if every item in the iterable is in this set
-// ["isSupersetOf", function(iterable) {
-
-// determines if this set has nothing in common with iterable
-// ["isDisjointFrom", function(iterable) {
-
-// As of May 2020, these are not yet on a standards track, but considered useful
-// const enhancedSetMethods = [
-// add all items in the arguments to the current Set
-// ["addMany", function(...elements) {
-
-// remove all items in the arguments from the current Set
-// ["deleteMany", function(...elements) {
-
-// add the iterable collection to this Set
-// ["addCollection", function(iterable) {
-
-// remove the iterable collection from this Set
-// ["deleteCollection", function(iterable) {
-
-// see if this Set and the iterable contain exactly the same elements (no extras on either side)
-// ["equals", function(iterable) {
+const { polyfillSet, enhanceSet, SetEx } = require('../index.js');
 
 // all test data applied to initial set [1,2,3]
 const polyfillData = [
@@ -85,10 +45,15 @@ const enhancedData = [
     [57, "equals", [], false],                              // b empty
 ]
 
-function runData(data, adderFn, passAsSeparateArgs = new Set()) {
+function runData(data, adderFn, ctor, passAsSeparateArgs = new Set()) {
     for (const [testNum, verb, arg, result] of data) {
-        const s = new Set([1,2,3]);
-        adderFn(s);
+        const s = new ctor([1,2,3]);
+        if (adderFn) {
+            adderFn(s);
+        }
+        if (typeof s[verb] !== "function") {
+            throw new Error(`s.${verb} is not a function`);
+        }
         const r = passAsSeparateArgs.has(verb) ? s[verb](...arg) : s[verb](arg);
         if (typeof result === "boolean") {
             assert(r === result, `testNum ${testNum} failed: got ${r}, expecting ${result}`);
@@ -98,7 +63,16 @@ function runData(data, adderFn, passAsSeparateArgs = new Set()) {
     }
 }
 
-runData(polyfillData, polyfillSet);
-runData(enhancedData, enhanceSet, separateArgs);
+runData(polyfillData, polyfillSet, Set);
+runData(enhancedData, enhanceSet, Set, separateArgs);
+
+// now run it where all methods are added to the prototype of a SetEx sub-class
+runData(enhancedData, null, SetEx, separateArgs);
+
+
+// now run it where all methods are added to the prototype and not to the individual object
+enhanceSet(Set.prototype);
+runData(polyfillData, null, Set);
+runData(enhancedData, null, Set, separateArgs);
 
 console.log("All tests passed.");
