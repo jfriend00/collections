@@ -65,7 +65,7 @@ function runData(data, adderFn, ctor, passAsSeparateArgs = new Set()) {
 }
 
 const callbackData = [
-    // [testNum, verb, fn, result]
+    // [testNum, verb, fn, result, extraArg]
     [100, "map", function(item, item, set) {
         return item * 2;
     }, [2,4,6]],
@@ -91,17 +91,36 @@ const callbackData = [
             return undefined;
         }
     }, [1,4]],
+    [107, "reduce", function(accumulator, item, item, set) {
+        return accumulator + item;
+    }, 16, 10],
+    [108, "reduce", function(accumulator, item, item, set) {
+        return accumulator + item;
+    }, 6, null],
+    [109, "find", function(item, item, set) {
+        return (item === 2);
+    }, 2],
+    [110, "find", function(item, item, set) {
+        return (item === 5);
+    }, undefined],
 ];
 
 function runCallback(data, adderFn, ctor) {
-    for (const [testNum, verb, fn, result] of data) {
+    for (const [testNum, verb, fn, result, extraArg] of data) {
         const s = new ctor([1,2,3]);
         adderFn(s);
         if (typeof s[verb] !== "function") {
             throw new Error(`s.${verb} is not a function`);
         }
-        const r = s[verb](fn, this);
-        if (typeof result === "boolean") {
+        let r;
+        if (extraArg === null) {
+            r = s[verb](fn);
+        } else if (extraArg !== undefined) {
+            r = s[verb](fn, extraArg);
+        } else {
+            r = s[verb](fn, this)
+        }
+        if (typeof result === "boolean" || typeof result === "number" || result === undefined) {
             assert(r === result, `testNum ${testNum} failed: got ${r}, expecting ${result}`);
         } else {
             assert.deepStrictEqual(Array.from(r), result, `testNum ${testNum} failed: got ${JSON.stringify(Array.from(r))}, expecting ${JSON.stringify(Array.from(result))}`);

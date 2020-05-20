@@ -113,6 +113,27 @@ const standardSetMethods = [
         }
         return newSet;
     }],
+    // same as array.reduce()
+    ["reduce", function(fn, initialValue) {
+        let first = true;
+        let accumulator = initialValue;
+        for (const item of this) {
+            if (first && initialValue === undefined) {
+                accumulator = item;
+                first = false;
+            } else {
+                accumulator = fn(accumulator, item, item, this);
+            }
+        }
+        return accumulator;
+    }],
+    ["find", function(fn, thisArg) {
+        for (const item of this) {
+            if (fn.call(thisArg, item, item, this) === true) {
+                return item;
+            }
+        }
+    }],
 ];
 
 // As of May 2020, these are not yet on a standards track, but considered useful
