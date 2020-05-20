@@ -182,8 +182,9 @@ const enhancedSetMethods = [
         return true;
     }],
     // Experimental:
-    // Make new set of filtered items - return undefined to drop from result,
-    // return any other value to put that value into the returned set
+    // Filter and map together
+    // return undefined to filter result out, any other return value to
+    // put that value in the resulting mapped set
     ["filterMap", function(fn, thisArg) {
         const newSet = new this.constructor();
         for (const item of this) {
@@ -193,6 +194,23 @@ const enhancedSetMethods = [
             }
         }
         return newSet;
+    }],
+    // Experimental:
+    // Make new set using async callback, running .map() callbacks serially
+    ["mapSeries", async function(fn, thisArg) {
+        const newSets = new this.constructor();
+        for (const item of this) {
+            let newVal = await fn.call(thisArg, item, item, this);
+            newSet.add(newVal);
+        }
+        return newSet;
+    }],
+    // Experimental:
+    // Make new set using async callback, running .map() callbacks in parallel
+    ["mapParallel", function(fn, thisArg) {
+        return Promise.all(this.map(fn, thisArg)).then(results => {
+            return new this.constructor(results);
+        });
     }],
 ];
 
