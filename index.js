@@ -241,5 +241,6 @@ class SortedArray extends Array {
 }
 
 const setExports = require('./set.js');
+const arrayExports = require('./array.js');
 
-module.exports = { MapArray, MapSet,  SortedArray, ...setExports };
+module.exports = { MapArray, MapSet,  SortedArray, ...setExports, ...arrayExports };
