@@ -45,11 +45,11 @@ console.log('ascending numeric sort correct');
 
 
 let c = [0,1,2,3,4,5,6,7,8,9];
-ArrayEx.enhance(c);
+ArrayEx.mix(c);
 c.shuffle();
 c.sortNumeric("descending");
 assert.deepStrictEqual(c, [9,8,7,6,5,4,3,2,1,0], `sortNumeric descending produced ${JSON.stringify(c)}`);
-console.log('enhanceArray() works');
+console.log('.mix() works');
 
 let d = new ArrayEx(0,1,2);
 d.append([3,4,5]);
@@ -69,7 +69,7 @@ console.log('.append(array1, array2) works');
 let g = new ArrayEx(0,1,2,2,1);
 let h = g.uniquify();
 assert.deepStrictEqual(h, new ArrayEx(0,1,2), `.uniquify(0,1,2,2,1) produced ${JSON.stringify(h)}`);
-console.log('uniquify() without a callback works');
+console.log('.uniquify() without a callback works');
 
 let j = new ArrayEx({i: 1}, {i: 1}, {i: 2}, {i: 3});
 let k = j.uniquify((a, b) => {
@@ -77,7 +77,7 @@ let k = j.uniquify((a, b) => {
 });
 let target = new ArrayEx({i: 1}, {i: 2}, {i: 3});
 assert.deepStrictEqual(k, target, `.uniquify({i: 1}, {i: 1}, {i: 2}, {i: 3}) produced ${JSON.stringify(k)}`);
-console.log('uniquify() with a callback works');
+console.log('.uniquify() with a callback works');
 
 let m = new ArrayEx(0,1,2);
 m.copyInto([2,3], 1);
@@ -116,3 +116,30 @@ p = new ArrayEx(0,1,2,3,4,5);
 q = p.max();
 assert(q === 5, `.max() produced ${JSON.stringify(q)}`);
 console.log('.max() works');
+
+p = new ArrayEx(0,1,2,3,4,5);
+q = new ArrayEx();
+for (let item of p.backward()) {
+    q.push(item);
+}
+target = new ArrayEx(5,4,3,2,1,0);
+assert.deepStrictEqual(q, target, `.backward() produced ${JSON.stringify(q)}`);
+console.log('.backward() iterator works');
+
+p = new ArrayEx(0,1,2,3,4,5);
+q = new ArrayEx();
+for (let item of p.forward()) {
+    q.push(item);
+}
+target = new ArrayEx(0,1,2,3,4,5);
+assert.deepStrictEqual(q, target, `.forward() produced ${JSON.stringify(q)}`);
+console.log('.forward() iterator works');
+
+p = new ArrayEx(0,1,2,3,4,5);
+q = new ArrayEx();
+for (let item of p.randoms()) {
+    q.push(item);
+}
+// need a better test for random results here
+assert(q.length === p.length, target, `.randoms() produced ${JSON.stringify(q)}`);
+console.log('.randoms() iterator works');

@@ -1,4 +1,4 @@
-const { enhance, enhanceStatic } = require('./utils.js');
+const { mix, mixStatic } = require('./utils.js');
 
 class ArrayEx extends Array {
     // run all requests in parallel, resolve to array of results
@@ -141,6 +141,7 @@ class ArrayEx extends Array {
         return output;
     }
 
+    // get max value in the array
     max() {
         if (!this.length) {
             throw new Error(`Can't call .max() on an empty array`);
@@ -154,6 +155,7 @@ class ArrayEx extends Array {
         return maxVal;
     }
 
+    // get min value in the array
     min() {
         if (!this.length) {
             throw new Error(`Can't call .min() on an empty array`);
@@ -166,19 +168,70 @@ class ArrayEx extends Array {
         }
         return minVal;
     }
+
+    // iterate backwards
+    backward() {
+        return {
+            [Symbol.iterator]: () => {
+                let i = this.length - 1;
+                return {
+                    next: () => {
+                        if (i < 0) {
+                            return {done: true};
+                        } else {
+                            return {value: this[i--], done: false};
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // iterate forward
+    forward() {
+        return this;    // core object already has appropriate forward
+                        // [Symbol.iterator] property, so we can use it
+    }
+
+    // get an iterator that iterates the whole array in random order
+    // The iterator works on a copy of the array so changes to the array after
+    //   getting the iterator do not affect it
+    randoms() {
+        return {
+            [Symbol.iterator]: () => {
+                let copy = this.slice();
+                return {
+                    next: () => {
+                        if (copy.length === 0) {
+                            return {done: true};
+                        } else {
+                            let randomIndex = Math.floor(Math.random() * copy.length);
+                            let randomValue = copy[randomIndex];
+                            // now remove this value from the copy
+                            copy.splice(randomIndex, 1);
+                            return {value: randomValue, done: false};
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+
 }
 
 // make static properties that take the array as the first argument
-enhanceStatic(ArrayEx.prototype, ArrayEx);
+mixStatic(ArrayEx, ArrayEx.prototype);
 
 // add ArrayEx methods to a regularArray object
-ArrayEx.enhance = function (regularArray) {
-    return enhance(ArrayEx.prototype, regularArray);
+ArrayEx.mix = function(regularArray) {
+    return mix(regularArray, ArrayEx.prototype);
 }
 
-// create a single element ArrayEx
-// (can't do it with the constructor by itself if the single value is a number
-// because of the weird behavior of new Array(n))
+// Create an ArrayEx object from any iterable
+// Also allows you to create an ArrayEx with a single number in it
+//   which you can't do with the constructor
 ArrayEx.from = function(iterable) {
     let arr = new ArrayEx();
     for (let item of iterable) {
@@ -187,4 +240,4 @@ ArrayEx.from = function(iterable) {
     return arr;
 }
 
-module.exports = { ArrayEx};
+module.exports = { ArrayEx };

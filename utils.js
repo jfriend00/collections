@@ -5,7 +5,7 @@ function rand(low, high) {
 
 // copy own properties from source to target (functions only)
 // generally used for copying methods from a class prototype to an existing object
-function enhance(source, target) {
+function mix(target, source) {
     let descriptors = Object.getOwnPropertyDescriptors(source);
     for (let prop in descriptors) {
         if (typeof descriptors[prop].value !== "function") {
@@ -25,7 +25,7 @@ function callWithObj(fn) {
 
 // copy own properteis from source to target, but make them
 // static properties that take the object as the first argument
-function enhanceStatic(source, target) {
+function mixStatic(target, source) {
     let descriptors = Object.getOwnPropertyDescriptors(source);
     for (let prop in descriptors) {
         if (typeof descriptors[prop].value === "function") {
@@ -39,4 +39,4 @@ function enhanceStatic(source, target) {
 }
 
 
-module.exports = { rand, enhance, enhanceStatic };
+module.exports = { rand, mix, mixStatic };
