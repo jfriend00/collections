@@ -167,13 +167,32 @@ const enhancedSetMethods = [
         return this;
     }],
     // see if this Set and the iterable contain exactly the same elements (no extras on either side)
+    // it uses the default iterator so for something like a Map, you should pass map.keys() or map.values()
+    // depending upon what you want to compare to the Set
     ["equals", function(iterable) {
         // This implementation looks for three conditions to be equal:
         //   1) Both comparisons are unique sets
         //   2) Both unique sets are the same size
         //   3) Every item in the iterable is in this Set
-        const targetSet = iterable instanceof Set ? iterable : new Set(iterable);
-        if (targetSet.size != this.size) return false;
+        // Special note: If iterable is a collection with duplicates,
+        //   it will never be equals to a Set
+        let targetSet;
+        let origSize;
+        // optimization if iterable is already a Set
+        if (iterable instanceof Set) {
+            targetSet = iterable;
+            origSize = targetSet.size;
+        } else {
+            targetSet = new Set();
+            origSize = 0;
+            // manually iterate iterable so we can count how many items
+            // were originally there
+            for (const item of iterable) {
+                ++origSize;
+                targetSet.add(item);
+            }
+        }
+        if (targetSet.size != this.size || origSize !== this.size) return false;
         for (const item of iterable) {
             if (!this.has(item)) {
                 return false;

@@ -44,6 +44,7 @@ const enhancedData = [
     [55, "equals", [1,2,3,4], false],                       // b contains something a doesn't
     [56, "equals", [1,2], false],                           // a contains something b doesn't
     [57, "equals", [], false],                              // b empty
+    [58, "equals", [1,2,2,3], false],                       // b contains a duplicate
 ]
 
 function runData(data, adderFn, ctor, passAsSeparateArgs = new Set()) {
