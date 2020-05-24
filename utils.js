@@ -16,4 +16,22 @@ function enhance(source, target) {
     return target;
 }
 
-module.exports = { rand, enhance };
+// copy own properteis from source to target, but make them
+// static properties that take the object as the first argument
+function enhanceStatic(source, target) {
+    let descriptors = Object.getOwnPropertyDescriptors(source);
+    for (let prop in descriptors) {
+        if (typeof descriptors[prop].value === "function") {
+            let propertyObj = descriptors[prop];
+            let fn = propertyObj.value;
+            propertyObj.value = function(obj, ...args) {
+                return fn.call(obj, ...args);
+            }
+            Object.defineProperty(target, prop, propertyObj);
+        }
+    }
+    return target;
+}
+
+
+module.exports = { rand, enhance, enhanceStatic };
