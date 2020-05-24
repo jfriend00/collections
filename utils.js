@@ -16,6 +16,13 @@ function enhance(source, target) {
     return target;
 }
 
+// use external function so we don't create a closure inside of enhanceStatic
+function callWithObj(fn) {
+    return function(obj, ...args) {
+        return fn.call(obj, ...args);
+    }
+}
+
 // copy own properteis from source to target, but make them
 // static properties that take the object as the first argument
 function enhanceStatic(source, target) {
@@ -24,9 +31,7 @@ function enhanceStatic(source, target) {
         if (typeof descriptors[prop].value === "function") {
             let propertyObj = descriptors[prop];
             let fn = propertyObj.value;
-            propertyObj.value = function(obj, ...args) {
-                return fn.call(obj, ...args);
-            }
+            propertyObj.value = callWithObj(fn);
             Object.defineProperty(target, prop, propertyObj);
         }
     }
