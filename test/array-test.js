@@ -54,9 +54,14 @@ console.log('enhanceArray() works');
 let d = new ArrayEx(0,1,2);
 d.append([3,4,5]);
 assert.deepStrictEqual(d, new ArrayEx(0,1,2,3,4,5), `.append() produced ${JSON.stringify(d)}`);
-console.log('.append() works');
+console.log('.append(array) works');
 
 let e = new Array(0,1,2);
 ArrayEx.append(e, [3,4,5]);
 assert.deepStrictEqual(e, new Array(0,1,2,3,4,5), `.append() produced ${JSON.stringify(e)}`);
-console.log('.append() works');
+console.log('.append(array) works');
+
+let f = new ArrayEx(0,1,2);
+f.append([3,4,5], [6,7,8]);
+assert.deepStrictEqual(f, new ArrayEx(0,1,2,3,4,5,6,7,8), `.append(array1, array2) produced ${JSON.stringify(f)}`);
+console.log('.append(array1, array2) works');

@@ -56,15 +56,25 @@ class ArrayEx extends Array {
         return this.sort(sortFn);
     }
 
-    // append the contents of another array onto this one
-    append(array) {
-        const numAdds = array.length;
+    // append the contents of one or more arrays onto this one
+    append(...arrays) {
+        // remember insertion point
         let i = this.length;
-        let j = 0;
-        // grow the array all at once
-        this.length = i + numAdds;
-        while (j < numAdds) {
-            this[i++] = array[j++];
+
+        // calc new length so we can grow the array once
+        let totalLength = this.length;
+        for (let array of arrays) {
+            totalLength += array.length;
+        }
+        this.length = totalLength;
+
+        for (let array of arrays) {
+            const numAdds = array.length;
+            let j = 0;
+            // grow the array all at once
+            while (j < numAdds) {
+                this[i++] = array[j++];
+            }
         }
         return this;
     }
