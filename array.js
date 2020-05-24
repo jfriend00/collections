@@ -78,6 +78,94 @@ class ArrayEx extends Array {
         }
         return this;
     }
+
+    // copy an array into another array, starting as pos
+    // overwrites existing content
+    copyInto(array, pos = 0) {
+        const newLen = pos + array.length;
+        if (newLen > this.length) {
+            // grow our array, if necessary
+            this.length = newLen;
+        }
+        let j = 0;
+        let i = pos;
+        while (j < array.length) {
+            this[i++] = array[j++];
+        }
+    }
+
+    // return a new array that has any duplicates removed
+    // if no compareFn callback is passed, then
+    //    duplicates are determined with ===
+    // If a compareFn callback is passed, then it is
+    // passed two values compareFn(a,b) and it must return true if
+    // values are the same, false if not
+    uniquify(compareFn) {
+        if (!compareFn) {
+            const set = new Set(this);
+            const output = new this.constructor();
+            for (let item of set) {
+                output.push(item);
+            }
+            return output;
+        } else {
+            const output = new this.constructor();
+            for (let i = 0; i < this.length; i++) {
+                const item = this[i];
+                let found = false;
+                for (let j = 0; j < output.length; j++) {
+                    if (compareFn(item, output[j])) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    output.push(item);
+                }
+            }
+            return output;
+        }
+    }
+
+    // break an array up into chunks
+    // the last chunk may have fewer items
+    // returns an array of arrays
+    chunk(chunkSize) {
+        const output = new this.constructor();
+        const numChunks = Math.ceil(this.length / chunkSize);
+        let index = 0;
+        for (let i = 0; i < numChunks; i++) {
+            output.push(this.slice(index, index + chunkSize));
+            index += chunkSize;
+        }
+        return output;
+    }
+
+    max() {
+        if (!this.length) {
+            throw new Error(`Can't call .max() on an empty array`);
+        }
+        let maxVal = this[0];
+        for (let i = 1; i < this.length; i++) {
+            if (this[i] > maxVal) {
+                maxVal = this[i];
+            }
+        }
+        return maxVal;
+    }
+
+    min() {
+        if (!this.length) {
+            throw new Error(`Can't call .min() on an empty array`);
+        }
+        let minVal = this[0];
+        for (let i = 1; i < this.length; i++) {
+            if (this[i] < minVal) {
+                minVal = this[i];
+            }
+        }
+        return minVal;
+    }
 }
 
 // make static properties that take the array as the first argument
@@ -86,6 +174,17 @@ enhanceStatic(ArrayEx.prototype, ArrayEx);
 // add ArrayEx methods to a regularArray object
 ArrayEx.enhance = function (regularArray) {
     return enhance(ArrayEx.prototype, regularArray);
+}
+
+// create a single element ArrayEx
+// (can't do it with the constructor by itself if the single value is a number
+// because of the weird behavior of new Array(n))
+ArrayEx.from = function(iterable) {
+    let arr = new ArrayEx();
+    for (let item of iterable) {
+        arr.push(item);
+    }
+    return arr;
 }
 
 module.exports = { ArrayEx};

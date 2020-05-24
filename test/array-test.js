@@ -59,9 +59,60 @@ console.log('.append(array) works');
 let e = new Array(0,1,2);
 ArrayEx.append(e, [3,4,5]);
 assert.deepStrictEqual(e, new Array(0,1,2,3,4,5), `.append() produced ${JSON.stringify(e)}`);
-console.log('.append(array) works');
+console.log('.append(array) works using static ArrayEx.append()');
 
 let f = new ArrayEx(0,1,2);
 f.append([3,4,5], [6,7,8]);
 assert.deepStrictEqual(f, new ArrayEx(0,1,2,3,4,5,6,7,8), `.append(array1, array2) produced ${JSON.stringify(f)}`);
 console.log('.append(array1, array2) works');
+
+let g = new ArrayEx(0,1,2,2,1);
+let h = g.uniquify();
+assert.deepStrictEqual(h, new ArrayEx(0,1,2), `.uniquify(0,1,2,2,1) produced ${JSON.stringify(h)}`);
+console.log('uniquify() without a callback works');
+
+let j = new ArrayEx({i: 1}, {i: 1}, {i: 2}, {i: 3});
+let k = j.uniquify((a, b) => {
+    return a.i === b.i;
+});
+let target = new ArrayEx({i: 1}, {i: 2}, {i: 3});
+assert.deepStrictEqual(k, target, `.uniquify({i: 1}, {i: 1}, {i: 2}, {i: 3}) produced ${JSON.stringify(k)}`);
+console.log('uniquify() with a callback works');
+
+let m = new ArrayEx(0,1,2);
+m.copyInto([2,3], 1);
+assert.deepStrictEqual(m, new ArrayEx(0,2,3), `.copyInto() produced ${JSON.stringify(m)}`);
+console.log('.copyInto() works');
+
+let n = new ArrayEx(0,1,2);
+n.copyInto([2,3,4,5], 1);
+assert.deepStrictEqual(n, new ArrayEx(0,2,3,4,5), `.copyInto() with target growth produced ${JSON.stringify(n)}`);
+console.log('.copyInto() with target growth works');
+
+let p = new ArrayEx(0,1,2,3,4);
+let q = p.chunk(2);
+target = new ArrayEx(new ArrayEx(0,1), new ArrayEx(2,3), ArrayEx.from([4]));
+assert.deepStrictEqual(q, target, `.chunk(2)) produced ${JSON.stringify(q)}`);
+console.log('.chunk(2) works');
+
+p = new ArrayEx(0,1,2,3,4,5);
+q = p.chunk(2);
+target = new ArrayEx(new ArrayEx(0,1), new ArrayEx(2,3), new ArrayEx(4,5));
+assert.deepStrictEqual(q, target, `.chunk(2)) produced ${JSON.stringify(q)}`);
+console.log('.chunk(2) works');
+
+p = new ArrayEx(0,1,2,3,4,5);
+q = p.chunk(10);
+target = new ArrayEx(new ArrayEx(0,1,2,3,4,5));
+assert.deepStrictEqual(q, target, `.chunk(10)) produced ${JSON.stringify(q)}`);
+console.log('.chunk(10) works');
+
+p = new ArrayEx(0,1,2,3,4,5,-1);
+q = p.min();
+assert(q === -1, `.min() produced ${JSON.stringify(q)}`);
+console.log('.min() works');
+
+p = new ArrayEx(0,1,2,3,4,5);
+q = p.max();
+assert(q === 5, `.max() produced ${JSON.stringify(q)}`);
+console.log('.max() works');
