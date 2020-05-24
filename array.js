@@ -24,7 +24,7 @@ class ArrayEx extends Array {
     }
 
     // not an async method, combines .filter() and .map() in one call
-    // saves an intermediate copy of the arrayif you chain .filter().map()
+    // saves an intermediate copy of the array versus chaining .filter().map()
     filterMap(fn, thisArg) {
         const newArray = new this.constructor();
         for (const item of this) {
@@ -64,9 +64,7 @@ class ArrayEx extends Array {
         // grow the array all at once
         this.length = i + numAdds;
         while (j < numAdds) {
-            this[i] = array[j];
-            i++;
-            j++;
+            this[i++] = array[j++];
         }
         return this;
     }
