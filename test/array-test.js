@@ -53,3 +53,8 @@ let d = new ArrayEx(0,1,2);
 d.append([3,4,5]);
 assert.deepStrictEqual(d, new ArrayEx(0,1,2,3,4,5), `.append() produced ${JSON.stringify(d)}`);
 console.log('.append() works');
+
+let e = new Array(0,1,2);
+ArrayEx.append(e, [3,4,5]);
+assert.deepStrictEqual(e, new Array(0,1,2,3,4,5), `.append() produced ${JSON.stringify(e)}`);
+console.log('.append() works');

@@ -1,4 +1,4 @@
-const { enhance } = require('./utils.js');
+const { enhance, enhanceStatic } = require('./utils.js');
 
 class ArrayEx extends Array {
     // run all requests in parallel, resolve to array of results
@@ -71,6 +71,9 @@ class ArrayEx extends Array {
         return this;
     }
 }
+
+// make static properties that take the array as the first argument
+enhanceStatic(ArrayEx.prototype, ArrayEx);
 
 // add ArrayEx methods to a regularArray object
 ArrayEx.enhance = function (regularArray) {
