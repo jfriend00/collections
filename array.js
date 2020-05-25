@@ -199,14 +199,14 @@ class ArrayEx extends Array {
     randoms() {
         return {
             [Symbol.iterator]: () => {
-                let copy = this.slice();
+                const copy = this.slice();
                 return {
                     next: () => {
                         if (copy.length === 0) {
                             return {done: true};
                         } else {
-                            let randomIndex = Math.floor(Math.random() * copy.length);
-                            let randomValue = copy[randomIndex];
+                            const randomIndex = Math.floor(Math.random() * copy.length);
+                            const randomValue = copy[randomIndex];
                             // now remove this value from the copy
                             copy.splice(randomIndex, 1);
                             return {value: randomValue, done: false};
@@ -216,7 +216,6 @@ class ArrayEx extends Array {
             }
         }
     }
-
 
 
 }
@@ -229,15 +228,54 @@ ArrayEx.mix = function(regularArray) {
     return mix(regularArray, ArrayEx.prototype);
 }
 
-// Create an ArrayEx object from any iterable
+// create an ArrayEx object and fill it with a range
+// of values from start (inclusive) to end (exclusive) incrementing by step
+ArrayEx.range = function(start, end, step = 1) {
+    const array = new ArrayEx();
+    let val = start;
+    if (step > 0) {
+        if (start > end) {
+            throw new Error('When step > 0, then you must have end > start');
+        }
+        while (val < end) {
+            array.push(val);
+            val += step;
+        }
+    } else if (step < 0) {
+        if (start < end) {
+            throw new Error('When step < 0, then you must have end < start');
+        }
+        while (val > end) {
+            array.push(val);
+            val += step;
+        }
+    } else {
+        throw new Error('step cannot be zero')
+    }
+    return array;
+}
+
+// Create an ArrayEx object from a list of arguments
 // Also allows you to create an ArrayEx with a single number in it
 //   which you can't do with the constructor
+ArrayEx.of = function(...items) {
+    let arr = new ArrayEx();
+    for (let item of items) {
+        arr.push(item);
+    }
+    return arr;
+}
+
 ArrayEx.from = function(iterable) {
     let arr = new ArrayEx();
     for (let item of iterable) {
         arr.push(item);
     }
     return arr;
+}
+
+ArrayEx.isArrayEx = function(obj) {
+    return obj instanceof ArrayEx;
 }
 
 module.exports = { ArrayEx };

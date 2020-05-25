@@ -91,11 +91,12 @@ console.log('.copyInto() with target growth works');
 
 let p = new ArrayEx(0,1,2,3,4);
 let q = p.chunk(2);
-target = new ArrayEx(new ArrayEx(0,1), new ArrayEx(2,3), ArrayEx.from([4]));
+target = new ArrayEx(new ArrayEx(0,1), new ArrayEx(2,3), ArrayEx.of(4));
 assert.deepStrictEqual(q, target, `.chunk(2)) produced ${JSON.stringify(q)}`);
 console.log('.chunk(2) works');
 
 p = new ArrayEx(0,1,2,3,4,5);
+console.log(`ArrayEx.isArrayEx(p): ${ArrayEx.isArrayEx(p)}`);
 q = p.chunk(2);
 target = new ArrayEx(new ArrayEx(0,1), new ArrayEx(2,3), new ArrayEx(4,5));
 assert.deepStrictEqual(q, target, `.chunk(2)) produced ${JSON.stringify(q)}`);
@@ -143,3 +144,13 @@ for (let item of p.randoms()) {
 // need a better test for random results here
 assert(q.length === p.length, target, `.randoms() produced ${JSON.stringify(q)}`);
 console.log('.randoms() iterator works');
+
+q = ArrayEx.range(1,5,2);
+target = new ArrayEx(1,3);
+assert.deepStrictEqual(q, target, `.range() produced ${JSON.stringify(q)}`);
+console.log('.range(1,5,2) worked');
+
+q = ArrayEx.range(5,1,-2);
+target = new ArrayEx(5,3);
+assert.deepStrictEqual(q, target, `.range() produced ${JSON.stringify(q)}`);
+console.log('.range(5,1,2) worked');
