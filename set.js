@@ -1,7 +1,9 @@
+const { mix } = require('./utils.js');
+
 // these are TC39-proposed methods as of May 2020: https://github.com/tc39/proposal-set-methods#proposal
-const standardSetMethods = [
+class SetStd extends Set {
     // creates new Set instance composed of items in both set and iterable
-    ["intersection", function(iterable) {
+    intersection(iterable) {
         let newSet = new this.constructor();
         for (const item of iterable) {
             if (this.has(item)) {
@@ -9,25 +11,28 @@ const standardSetMethods = [
             }
         }
         return newSet;
-    }],
+    }
+
     // creates new Set instance as union of both set and iterable
-    ["union", function(iterable) {
+    union(iterable) {
         let newSet = new this.constructor(this);
         for (const item of iterable) {
             newSet.add(item);
         }
         return newSet;
-    }],
+    }
+
     // creates new Set of elements in original that are not present in iterable
-    ["difference", function(iterable) {
+    difference(iterable) {
         let newSet = new this.constructor(this);
         for (const item of iterable) {
             newSet.delete(item);
         }
         return newSet;
-    }],
+    }
+
     // set of elements found only in one or the other, but not both
-    ["symmetricDifference", function(iterable) {
+    symmetricDifference(iterable) {
         let newSet = new this.constructor(this);
         for (const item of iterable) {
             if (newSet.has(item)) {
@@ -39,10 +44,11 @@ const standardSetMethods = [
             }
         }
         return newSet;
-    }],
+    }
+
     // determines if this set is a subset of the iterable
     // by determining if every item in this set is in the iterable
-    ["isSubsetOf", function(iterable) {
+    isSubsetOf(iterable) {
         let targetSet = iterable instanceof Set ? iterable : new Set(iterable);
         for (const item of this) {
             if (!targetSet.has(item)) {
@@ -50,61 +56,67 @@ const standardSetMethods = [
             }
         }
         return true;
-    }],
+    }
+
     // determines if this set is a superset of the iterable
     // by determining if every item in the iterable is in this set
-    ["isSupersetOf", function(iterable) {
+    isSupersetOf(iterable) {
         for (const item of iterable) {
             if (!this.has(item)) {
                 return false;
             }
         }
         return true;
-    }],
+    }
+
     // determines if this set has nothing in common with iterable
-    ["isDisjointFrom", function(iterable) {
+    isDisjointFrom(iterable) {
         for (const item of iterable) {
             if (this.has(item)) {
                 return false;
             }
         }
         return true;
-    }],
+    }
 
     // Array-like methods
 
     // process this set and create a new set from return values
-    ["map", function(fn, thisArg) {
+    map(fn, thisArg) {
         const newSet = new this.constructor();
         for (const item of this) {
             newSet.add(fn.call(thisArg, item, item, this));
         }
         return newSet;
-    }],
+    }
+
     // see if every item passed the callback test
-    ["every", function(fn, thisArg) {
+    every(fn, thisArg) {
         for (const item of this) {
             if (fn.call(thisArg, item, item, this) === false) {
                 return false;
             }
         }
         return true;
-    }],
+    }
+
     // if any item gets a true return value from the callback, then return true
-    ["some", function(fn, thisArg) {
+    some(fn, thisArg) {
         for (const item of this) {
             if (fn.call(thisArg, item, item, this) === true) {
                 return true;
             }
         }
         return false;
-    }],
+    }
+
     // join set items in a string (like array.join())
-    ["join", function(separator) {
+    join(separator) {
         return Array.from(this).join(separator);
-    }],
+    }
+
     // make new set of filtered items - return true to keep in the new set
-    ["filter", function(fn, thisArg) {
+    filter(fn, thisArg) {
         const newSet = new this.constructor();
         for (const item of this) {
             if (fn.call(thisArg, item, item, this) === true) {
@@ -112,9 +124,10 @@ const standardSetMethods = [
             }
         }
         return newSet;
-    }],
+    }
+
     // same as array.reduce()
-    ["reduce", function(fn, initialValue) {
+    reduce(fn, initialValue) {
         let first = true;
         let accumulator = initialValue;
         for (const item of this) {
@@ -126,50 +139,55 @@ const standardSetMethods = [
             }
         }
         return accumulator;
-    }],
-    ["find", function(fn, thisArg) {
+    }
+
+    find(fn, thisArg) {
         for (const item of this) {
             if (fn.call(thisArg, item, item, this) === true) {
                 return item;
             }
         }
-    }],
-];
+    }
+}
 
 // As of May 2020, these are not yet on a standards track, but considered useful
-const enhancedSetMethods = [
+class SetEx extends SetStd {
     // add all items in the arguments to the current Set
-    ["addMany", function(...elements) {
+    addMany(...elements) {
         for (const item of elements) {
             this.add(item);
         }
         return this;
-    }],
+    }
+
     // remove all items in the arguments from the current Set
-    ["deleteMany", function(...elements) {
+    deleteMany(...elements) {
         for (const item of elements) {
             this.delete(item);
         }
         return this;
-    }],
+    }
+
     // add the iterable collection to this Set
-    ["addCollection", function(iterable) {
+    addCollection(iterable) {
         for (const item of iterable) {
             this.add(item);
         }
         return this;
-    }],
+    }
+
     // remove the iterable collection from this Set
-    ["deleteCollection", function(iterable) {
+    deleteCollection(iterable) {
         for (const item of iterable) {
             this.delete(item);
         }
         return this;
-    }],
+    }
+
     // see if this Set and the iterable contain exactly the same elements (no extras on either side)
     // it uses the default iterator so for something like a Map, you should pass map.keys() or map.values()
     // depending upon what you want to compare to the Set
-    ["equals", function(iterable) {
+    equals(iterable) {
         // This implementation looks for three conditions to be equal:
         //   1) Both comparisons are unique sets
         //   2) Both unique sets are the same size
@@ -199,12 +217,13 @@ const enhancedSetMethods = [
             }
         }
         return true;
-    }],
+    }
+
     // Experimental:
     // Filter and map together
     // return undefined to filter result out, any other return value to
     // put that value in the resulting mapped set
-    ["filterMap", function(fn, thisArg) {
+    filterMap(fn, thisArg) {
         const newSet = new this.constructor();
         for (const item of this) {
             let newVal = fn.call(thisArg, item, item, this);
@@ -213,54 +232,42 @@ const enhancedSetMethods = [
             }
         }
         return newSet;
-    }],
+    }
+
     // Experimental:
     // Make new set using async callback, running .map() callbacks serially
-    ["mapSeries", async function(fn, thisArg) {
+    async mapSeries(fn, thisArg) {
         const newSets = new this.constructor();
         for (const item of this) {
             let newVal = await fn.call(thisArg, item, item, this);
             newSet.add(newVal);
         }
         return newSet;
-    }],
+    }
+
     // Experimental:
     // Make new set using async callback, running .map() callbacks in parallel
-    ["mapParallel", function(fn, thisArg) {
+    mapParallel(fn, thisArg) {
         return Promise.all(this.map(fn, thisArg)).then(results => {
             return new this.constructor(results);
         });
-    }],
-];
-
-function addMethods(obj, ...lists) {
-    for (const array of lists)
-        for (const [prop, method] of array) {
-            // define methods as non-enumerable, non-configurable, non-writable
-            // only add it if this property name not found on either the object or the prototype
-            if (!obj[prop]) {
-                Object.defineProperty(obj, prop, {value: method});
-            }
-        }
-}
-
-// you can call this on either an existing Set object or on the Set prototype
-function polyfillSet(s) {
-    addMethods(s, standardSetMethods);
-}
-
-// you can call this on either an existing Set object or on the Set prototype
-function enhanceSet(s) {
-    addMethods(s, standardSetMethods);
-    addMethods(s, enhancedSetMethods);
-}
-
-class SetEx extends Set {
-    constructor(iterable) {
-        super(iterable);
     }
+
 }
 
-enhanceSet(SetEx.prototype);
+// you can call this on either an existing Set object or on the Set prototype
+SetStd.mix = function(s) {
+    mix(s, SetStd.prototype);
+}
 
-module.exports = { polyfillSet, enhanceSet, SetEx };
+// should only call this on an instance, not on a prototype (since these are non-standard)
+SetEx.mix = function(s) {
+    mix(s, SetStd.prototype);
+    mix(s, SetEx.prototype);
+}
+
+// make the methods available statically by passing the object as the first arg
+mixStatic(SetStd, SetStd.prototype);
+mixStatic(SetEx, SetEx.prototype);
+
+module.exports = { SetStd, SetEx };

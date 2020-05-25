@@ -1,5 +1,5 @@
 const assert = require('assert').strict;
-const { polyfillSet, enhanceSet, SetEx } = require('../index.js');
+const { SetStd, SetEx } = require('../index.js');
 
 // all test data applied to initial set [1,2,3]
 const polyfillData = [
@@ -129,11 +129,11 @@ function runCallback(data, adderFn, ctor) {
     }
 }
 
-runData(polyfillData, polyfillSet, Set);
-runData(enhancedData, enhanceSet, Set, separateArgs);
+runData(polyfillData, SetStd.mix, Set);
+runData(enhancedData, SetEx.mix, Set, separateArgs);
 
 // run callback methods
-runCallback(callbackData, enhanceSet, Set);
+runCallback(callbackData, SetEx.mix, Set);
 
 
 // now run it where all methods are added to the prototype of a SetEx sub-class
@@ -141,7 +141,7 @@ runData(enhancedData, null, SetEx, separateArgs);
 
 
 // now run it where all methods are added to the prototype and not to the individual object
-enhanceSet(Set.prototype);
+SetEx.mix(Set.prototype);
 runData(polyfillData, null, Set);
 runData(enhancedData, null, Set, separateArgs);
 
