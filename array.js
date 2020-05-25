@@ -1,4 +1,5 @@
-const { mix, mixStatic } = require('./utils.js');
+const { mix, mixStatic, speciesCreate } = require('./utils.js');
+
 
 class ArrayEx extends Array {
     // run all requests in parallel, resolve to array of results
@@ -8,7 +9,7 @@ class ArrayEx extends Array {
 
     // run all requests in series, resolve to array of results
     async mapSeries(fn, thisArg) {
-        const newArray = new this.constructor();
+        const newArray = speciesCreate(this, ArrayEx);
         for (const item of this) {
             let newVal = await fn.call(thisArg, item, item, this);
             newArray.push(newVal);
@@ -17,6 +18,7 @@ class ArrayEx extends Array {
     }
 
     // run all requests in series, don't keep track of results
+    // returns promise with undefined resolved value, will reject if any call in the loop rejects
     async eachSeries(fn, thisArg) {
         for (const item of this) {
             await fn.call(thisArg, item, item, this);
@@ -26,7 +28,7 @@ class ArrayEx extends Array {
     // not an async method, combines .filter() and .map() in one call
     // saves an intermediate copy of the array versus chaining .filter().map()
     filterMap(fn, thisArg) {
-        const newArray = new this.constructor();
+        const newArray = speciesCreate(this, ArrayEx);
         for (const item of this) {
             let newVal = fn.call(thisArg, item, item, this);
             if (newVal !== undefined) {
@@ -79,8 +81,8 @@ class ArrayEx extends Array {
         return this;
     }
 
-    // copy an array into another array, starting as pos
-    // overwrites existing content
+    // copy an array into another array, starting at pos
+    // overwrites existing content, will cause target array to grow if needed
     copyInto(array, pos = 0) {
         const newLen = pos + array.length;
         if (newLen > this.length) {
@@ -103,13 +105,13 @@ class ArrayEx extends Array {
     uniquify(compareFn) {
         if (!compareFn) {
             const set = new Set(this);
-            const output = new this.constructor();
+            const output = speciesCreate(this, ArrayEx);
             for (let item of set) {
                 output.push(item);
             }
             return output;
         } else {
-            const output = new this.constructor();
+            const output = speciesCreate(this, ArrayEx);
             for (let i = 0; i < this.length; i++) {
                 const item = this[i];
                 let found = false;
@@ -131,7 +133,10 @@ class ArrayEx extends Array {
     // the last chunk may have fewer items
     // returns an array of arrays
     chunk(chunkSize) {
-        const output = new this.constructor();
+        if (!Number.isInteger(chunkSize) || chunkSize <= 0) {
+            throw new TypeError('chunkSize must be a positive integer');
+        }
+        const output = speciesCreate(this, ArrayEx);
         const numChunks = Math.ceil(this.length / chunkSize);
         let index = 0;
         for (let i = 0; i < numChunks; i++) {
