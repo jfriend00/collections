@@ -39,5 +39,20 @@ function mixStatic(target, source) {
     return target;
 }
 
+// create a new object using the class of an existing object (which might be a sub-class)
+// by following the ECMAScript procedure except it leaves out the realm detection part
+// See https://stackoverflow.com/questions/62010217/how-to-create-a-new-object-of-same-class-as-current-object-from-within-a-method#62010482 for details
+function speciesCreate(originalObject, fallbackConstructor, ...args) {
+    const {constructor} = originalObject;
+    if (constructor) {
+        const C = constructor[Symbol.species];
+        if (typeof C === "function") {
+            return new C(...args);
+        } else if (typeof constructor === "function") {
+            return new constructor(...args);
+        }
+    }
+    return new fallbackConstructor(...args);
+}
 
-module.exports = { rand, mix, mixStatic };
+module.exports = { rand, mix, mixStatic, speciesCreate };
