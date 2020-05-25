@@ -1,10 +1,12 @@
-const { mix, mixStatic } = require('./utils.js');
+const { mix, mixStatic, speciesCreate } = require('./utils.js');
 
 // these are TC39-proposed methods as of May 2020: https://github.com/tc39/proposal-set-methods#proposal
-class SetStd extends Set {
+// we don't intend to use this directly.  This is a placeholder for polyfill methods
+// that will be copied to other objects as desired
+class SetStd {
     // creates new Set instance composed of items in both set and iterable
     intersection(iterable) {
-        let newSet = new this.constructor();
+        let newSet = speciesCreate(this, SetStd);
         for (const item of iterable) {
             if (this.has(item)) {
                 newSet.add(item);
@@ -15,7 +17,7 @@ class SetStd extends Set {
 
     // creates new Set instance as union of both set and iterable
     union(iterable) {
-        let newSet = new this.constructor(this);
+        let newSet = speciesCreate(this, SetStd, this);
         for (const item of iterable) {
             newSet.add(item);
         }
@@ -24,7 +26,7 @@ class SetStd extends Set {
 
     // creates new Set of elements in original that are not present in iterable
     difference(iterable) {
-        let newSet = new this.constructor(this);
+        let newSet = speciesCreate(this, SetStd, this);
         for (const item of iterable) {
             newSet.delete(item);
         }
@@ -33,7 +35,7 @@ class SetStd extends Set {
 
     // set of elements found only in one or the other, but not both
     symmetricDifference(iterable) {
-        let newSet = new this.constructor(this);
+        let newSet = speciesCreate(this, SetStd, this);
         for (const item of iterable) {
             if (newSet.has(item)) {
                 // if it's in both, remove it
@@ -83,7 +85,7 @@ class SetStd extends Set {
 
     // process this set and create a new set from return values
     map(fn, thisArg) {
-        const newSet = new this.constructor();
+        const newSet = speciesCreate(this, SetStd);
         for (const item of this) {
             newSet.add(fn.call(thisArg, item, item, this));
         }
@@ -117,7 +119,7 @@ class SetStd extends Set {
 
     // make new set of filtered items - return true to keep in the new set
     filter(fn, thisArg) {
-        const newSet = new this.constructor();
+        const newSet = speciesCreate(this, SetStd);
         for (const item of this) {
             if (fn.call(thisArg, item, item, this) === true) {
                 newSet.add(item);
@@ -151,7 +153,7 @@ class SetStd extends Set {
 }
 
 // As of May 2020, these are not yet on a standards track, but considered useful
-class SetEx extends SetStd {
+class SetEx extends Set {
     // add all items in the arguments to the current Set
     addMany(...elements) {
         for (const item of elements) {
@@ -224,7 +226,7 @@ class SetEx extends SetStd {
     // return undefined to filter result out, any other return value to
     // put that value in the resulting mapped set
     filterMap(fn, thisArg) {
-        const newSet = new this.constructor();
+        const newSet = speciesCreate(this, SetEx);
         for (const item of this) {
             let newVal = fn.call(thisArg, item, item, this);
             if (newVal !== undefined) {
@@ -237,7 +239,7 @@ class SetEx extends SetStd {
     // Experimental:
     // Make new set using async callback, running .map() callbacks serially
     async mapSeries(fn, thisArg) {
-        const newSets = new this.constructor();
+        const newSets = speciesCreate(this, SetEx);
         for (const item of this) {
             let newVal = await fn.call(thisArg, item, item, this);
             newSet.add(newVal);
@@ -249,25 +251,34 @@ class SetEx extends SetStd {
     // Make new set using async callback, running .map() callbacks in parallel
     mapParallel(fn, thisArg) {
         return Promise.all(this.map(fn, thisArg)).then(results => {
-            return new this.constructor(results);
+            return new speciesCreate(this, SetEx, results);
         });
     }
 
 }
+
+// then mixin SetStd into SetEx so that it doesn't overwrite existing methods on Set.prototype
+mix(SetEx.prototype, SetStd.prototype)
+
 
 // you can call this on either an existing Set object or on the Set prototype
 SetStd.mix = function(s) {
     mix(s, SetStd.prototype);
 }
 
-// should only call this on an instance, not on a prototype (since these are non-standard)
+// mix all these methods into an existing instance
 SetEx.mix = function(s) {
     mix(s, SetStd.prototype);
     mix(s, SetEx.prototype);
 }
 
-// make the methods available statically by passing the object as the first arg
-mixStatic(SetStd, SetStd.prototype);
+// make all these methods available statically on SetEx by passing the object as the first arg
+mixStatic(SetEx, SetStd.prototype);
 mixStatic(SetEx, SetEx.prototype);
 
-module.exports = { SetStd, SetEx };
+// put all the SetStd methods on the actual Set prototype
+function polyfillSet() {
+    mix(Set.prototype, SetStd.prototype);
+}
+
+module.exports = { SetEx, SetStd, polyfillSet };
