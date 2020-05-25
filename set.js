@@ -1,4 +1,4 @@
-const { mix } = require('./utils.js');
+const { mix, mixStatic } = require('./utils.js');
 
 // these are TC39-proposed methods as of May 2020: https://github.com/tc39/proposal-set-methods#proposal
 class SetStd extends Set {

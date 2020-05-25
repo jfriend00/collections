@@ -65,6 +65,22 @@ function runData(data, adderFn, ctor, passAsSeparateArgs = new Set()) {
     }
 }
 
+function runDataUsingStaticMethods(data) {
+    for (const [testNum, verb, arg, result] of data) {
+        const s = new Set([1,2,3]);
+        if (typeof SetEx[verb] !== "function") {
+            throw new Error(`s.${verb} is not a function`);
+        }
+        // call static version of the methods
+        const r = SetEx[verb](s, arg);
+        if (typeof result === "boolean" || typeof result === "string") {
+            assert(r === result, `testNum ${testNum} failed: got ${r}, expecting ${result}`);
+        } else {
+            assert.deepStrictEqual(Array.from(r), result, `testNum ${testNum} failed: got ${JSON.stringify(Array.from(r))}, expecting ${JSON.stringify(Array.from(result))}`);
+        }
+    }
+}
+
 const callbackData = [
     // [testNum, verb, fn, result, extraArg]
     [100, "map", function(item, item, set) {
@@ -131,6 +147,7 @@ function runCallback(data, adderFn, ctor) {
 
 runData(polyfillData, SetStd.mix, Set);
 runData(enhancedData, SetEx.mix, Set, separateArgs);
+runDataUsingStaticMethods(polyfillData);
 
 // run callback methods
 runCallback(callbackData, SetEx.mix, Set);
