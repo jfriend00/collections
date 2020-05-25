@@ -3,12 +3,13 @@ function rand(low, high) {
     return Math.floor((Math.random() * (high - low)) + low);
 }
 
-// copy own properties from source to target (functions only)
+// Copy own properties from source to target (functions only)
 // generally used for copying methods from a class prototype to an existing object
+// Will not overwrite an existing property of the same name
 function mix(target, source) {
     let descriptors = Object.getOwnPropertyDescriptors(source);
     for (let prop in descriptors) {
-        if (typeof descriptors[prop].value !== "function") {
+        if (target[prop] || typeof descriptors[prop].value !== "function") {
             delete descriptors[prop];
         }
     }
@@ -28,7 +29,7 @@ function callWithObj(fn) {
 function mixStatic(target, source) {
     let descriptors = Object.getOwnPropertyDescriptors(source);
     for (let prop in descriptors) {
-        if (typeof descriptors[prop].value === "function") {
+        if (!target[prop] && typeof descriptors[prop].value === "function") {
             let propertyObj = descriptors[prop];
             let fn = propertyObj.value;
             propertyObj.value = callWithObj(fn);
