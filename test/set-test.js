@@ -1,5 +1,5 @@
 const assert = require('assert').strict;
-const { SetStd, SetEx } = require('../index.js');
+const { SetStd, SetEx, polyfillSet } = require('../index.js');
 
 // all test data applied to initial set [1,2,3]
 const polyfillData = [
@@ -158,8 +158,11 @@ runData(enhancedData, null, SetEx, separateArgs);
 
 
 // now run it where all methods are added to the prototype and not to the individual object
-SetEx.mix(Set.prototype);
+polyfillSet();
 runData(polyfillData, null, Set);
+
+// now put even the SetEx methods on the Set prototype (not to be done in production)
+SetEx.mix(Set.prototype);
 runData(enhancedData, null, Set, separateArgs);
 
 console.log("Set and SetEx method tests passed.");
