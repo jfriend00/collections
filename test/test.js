@@ -129,8 +129,8 @@ function addBunchIndividual(bigLen, bigMax) {
 }
 
 console.log("Processing large array1 ...")
-addBunchMany(5_000_000, 100_000_000);
+addBunchMany(500_000, 10_000_000);
 console.log("Processing large array2 ...")
-addBunchIndividual(50_000, 100_000_000);
+addBunchIndividual(5_000, 10_000_000);
 
 console.log("MapArray, MapSet and SortedArray tests passed");
