@@ -42,13 +42,18 @@ function mixStatic(target, source) {
 // create a new object using the class of an existing object (which might be a sub-class)
 // by following the ECMAScript procedure except it leaves out the realm detection part
 // See https://stackoverflow.com/questions/62010217/how-to-create-a-new-object-of-same-class-as-current-object-from-within-a-method#62010482 for details
+
+// no real way to see if it's a real constructor from plain JS other than these two checks
+function isConstructor(f) {
+    return typeof f === "function" && !!f.prototype;
+}
 function speciesCreate(originalObject, fallbackConstructor, ...args) {
     const {constructor} = originalObject;
     if (constructor) {
         const C = constructor[Symbol.species];
-        if (typeof C === "function") {
+        if (isConstructor(C)) {
             return new C(...args);
-        } else if (typeof constructor === "function") {
+        } else if (isConstructor(constructor)) {
             return new constructor(...args);
         }
     }
