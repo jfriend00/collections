@@ -103,20 +103,19 @@ class ArrayEx extends Array {
     // passed two values compareFn(a,b) and it must return true if
     // values are the same, false if not
     uniquify(compareFn) {
-        if (!compareFn) {
+        const output = speciesCreate(this, ArrayEx);
+        // if no compareFn, then use a Set as a more efficient shortuct
+        if (typeof compareFn !== "function") {
             const set = new Set(this);
-            const output = speciesCreate(this, ArrayEx);
             for (let item of set) {
                 output.push(item);
             }
-            return output;
         } else {
-            const output = speciesCreate(this, ArrayEx);
-            for (let i = 0; i < this.length; i++) {
-                const item = this[i];
+            // with a compareFn, we have to do brute force searching
+            for (let item of this) {
                 let found = false;
-                for (let j = 0; j < output.length; j++) {
-                    if (compareFn(item, output[j])) {
+                for (let testItem of output) {
+                    if (compareFn(item, testItem)) {
                         found = true;
                         break;
                     }
@@ -125,8 +124,8 @@ class ArrayEx extends Array {
                     output.push(item);
                 }
             }
-            return output;
         }
+        return output;
     }
 
     // break an array up into chunks
@@ -220,6 +219,20 @@ class ArrayEx extends Array {
                 }
             }
         }
+    }
+
+    // create a map with array value as the map key and array index as the map value
+    // so you can quickly look up a bunch of values in the array, but still get back
+    // an array index (presumably for future array manipulation)
+    // As soon as you modify the array in any way, this map is invalid
+    // Once you have both the array and this map, you can efficiently look up a value
+    // by either index or by value.
+    createMapByIndex() {
+        let map = new Map();
+        for (const [index, item] of this.entries()) {
+            map.set(item, index);
+        }
+        return map;
     }
 
 

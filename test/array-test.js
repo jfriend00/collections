@@ -154,3 +154,8 @@ q = ArrayEx.range(5,1,-2);
 target = new ArrayEx(5,3);
 assert.deepStrictEqual(q, target, `.range() produced ${JSON.stringify(q)}`);
 console.log('.range(5,1,2) worked');
+
+q = new ArrayEx("a", "b", "c").createMapByIndex();
+assert(q.get("a") === 0, `.createMapByIndex() produced ${q.get("a")}`);
+assert(q.get("c") === 2, `.createMapByIndex() produced ${q.get("c")}`);
+console.log('.createMapByIndex() worked');
