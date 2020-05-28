@@ -56,55 +56,57 @@ function runArrayAdds(sortedArray, insertData) {
 }
 
 // let's try .add() on a non-sorted array
-(function() {
-    let errFile = path.join(__dirname, 'insertion-sort-fail.json');
+if (false) {
+    (function() {
+        const errFile = path.join(__dirname, 'insertion-sort-fail.json');
 
-    let arr = new SortedArray();
-    let origData = {};
-    let prevData = {};
+        const arr = new SortedArray();
+        const origData = {};
+        let prevData = {};
 
-    function err(newVal, msg) {
-        // capture the problem case so we can run it again
-        origData.newVal = newVal;
-        fs.writeFileSync(errFile, JSON.stringify(origData));
-        assert.fail(msg);
-    }
-
-    const lenArray = 20;
-    const low = 0;
-    const high = 100;
-    const numChecks = 100;
-
-    try {
-        prevData = require(errFile);
-        for (let item of prevData.array) {
-            arr.push(item);
+        function err(newVal, msg) {
+            // capture the problem case so we can run it again
+            origData.newVal = newVal;
+            fs.writeFileSync(errFile, JSON.stringify(origData));
+            assert.fail(msg);
         }
-    } catch(e) {
-        // no presaved log file to start with so make our own randomized array
-        for (let i = 0; i < lenArray; i++) {
-            arr.push(rand(0, 100));
-        }
-    }
-    // array is now randomized
-    for (let i = 0; i < numChecks; i++) {
-        // make copy of our array for the log file (if there's an error)
-        origData.array = arr.slice();
-        let newVal = prevData.newVal ? prevData.newVal : rand(0, 100);
-        let addIndex = arr.add(newVal);
-        if (addIndex !== 0) {
-            if (arr[addIndex - 1] > newVal) {
-                err(newVal, `Problem with arr[addIndex - 1] < newVal: ${arr[addIndex - 1]}, ${newVal}`)
+
+        const lenArray = 20;
+        const low = 0;
+        const high = 100;
+        const numChecks = 100;
+
+        try {
+            prevData = require(errFile);
+            for (let item of prevData.array) {
+                arr.push(item);
+            }
+        } catch(e) {
+            // no presaved log file to start with so make our own randomized array
+            for (let i = 0; i < lenArray; i++) {
+                arr.push(rand(0, 100));
             }
         }
-        if (addIndex + 1 < arr.length) {
-            if (arr[addIndex + 1] < newVal) {
-                err(newVal, `Problem with arr[addIndex + 1] > newVal: ${newVal}, ${arr[addIndex + 1]}`);
+        // array is now randomized
+        for (let i = 0; i < numChecks; i++) {
+            // make copy of our array for the log file (if there's an error)
+            origData.array = arr.slice();
+            let newVal = prevData.newVal ? prevData.newVal : rand(0, 100);
+            let addIndex = arr.add(newVal);
+            if (addIndex !== 0) {
+                if (arr[addIndex - 1] > newVal) {
+                    err(newVal, `Problem with arr[addIndex - 1] < newVal: ${arr[addIndex - 1]}, ${newVal}`)
+                }
+            }
+            if (addIndex + 1 < arr.length) {
+                if (arr[addIndex + 1] < newVal) {
+                    err(newVal, `Problem with arr[addIndex + 1] > newVal: ${newVal}, ${arr[addIndex + 1]}`);
+                }
             }
         }
-    }
-    console.log('Inserting into unsorted array passed.');
-})();
+        console.log('Inserting into unsorted array passed.');
+    })();
+}
 
 let arr1 = new SortedArray([1,2,4]);
 let data1 = [
