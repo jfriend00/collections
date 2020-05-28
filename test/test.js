@@ -1,5 +1,8 @@
 const { MapSet, MapArray, SortedArray } = require('../index.js');
+const { rand } = require('../utils.js');
 const assert = require('assert').strict;
+const fs = require('fs');
+const path = require('path');
 
 let testData = [
     ["a", "1"],
@@ -52,6 +55,57 @@ function runArrayAdds(sortedArray, insertData) {
     console.log(sortedArray.toArray());
 }
 
+// let's try .add() on a non-sorted array
+(function() {
+    let errFile = path.join(__dirname, 'insertion-sort-fail.json');
+
+    let arr = new SortedArray();
+    let origData = {};
+    let prevData = {};
+
+    function err(newVal, msg) {
+        // capture the problem case so we can run it again
+        origData.newVal = newVal;
+        fs.writeFileSync(errFile, JSON.stringify(origData));
+        assert.fail(msg);
+    }
+
+    const lenArray = 20;
+    const low = 0;
+    const high = 100;
+    const numChecks = 100;
+
+    try {
+        prevData = require(errFile);
+        for (let item of prevData.array) {
+            arr.push(item);
+        }
+    } catch(e) {
+        // no presaved log file to start with so make our own randomized array
+        for (let i = 0; i < lenArray; i++) {
+            arr.push(rand(0, 100));
+        }
+    }
+    // array is now randomized
+    for (let i = 0; i < numChecks; i++) {
+        // make copy of our array for the log file (if there's an error)
+        origData.array = arr.slice();
+        let newVal = prevData.newVal ? prevData.newVal : rand(0, 100);
+        let addIndex = arr.add(newVal);
+        if (addIndex !== 0) {
+            if (arr[addIndex - 1] > newVal) {
+                err(newVal, `Problem with arr[addIndex - 1] < newVal: ${arr[addIndex - 1]}, ${newVal}`)
+            }
+        }
+        if (addIndex + 1 < arr.length) {
+            if (arr[addIndex + 1] < newVal) {
+                err(newVal, `Problem with arr[addIndex + 1] > newVal: ${newVal}, ${arr[addIndex + 1]}`);
+            }
+        }
+    }
+    console.log('Inserting into unsorted array passed.');
+})();
+
 let arr1 = new SortedArray([1,2,4]);
 let data1 = [
     [3, [1,2,3,4]],                         // mid value
@@ -82,15 +136,11 @@ let data3 = [
 
 runArrayAdds(arr3, data3);
 
-function rand(max) {
-    return Math.floor(Math.random() * max);
-}
-
 function addBunchMany(bigLen, bigMax) {
     let temp = [];
     let bigArr = new SortedArray();
     for (let i = 0; i < bigLen; i++) {
-        temp.push(rand(bigMax));
+        temp.push(rand(0, bigMax));
     }
     bigArr.addCollection(temp);
 
@@ -102,7 +152,7 @@ function addBunchMany(bigLen, bigMax) {
         if (i && i % 50 === 0) {
             console.log(`inserting individually into large array ${i} of ${numIndividual}`);
         }
-        bigArr.add(rand(bigMax));
+        bigArr.add(rand(0, bigMax));
     }
 
     for (let i = 1; i < bigArr.length; i++) {
@@ -118,7 +168,7 @@ function addBunchIndividual(bigLen, bigMax) {
         if (i && i % 1000 === 0) {
             console.log(`processing ${i} of ${bigLen}`);
         }
-        bigArr.add(rand(bigMax));
+        bigArr.add(rand(0, bigMax));
     }
 
     for (let i = 1; i < bigArr.length; i++) {
