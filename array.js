@@ -49,6 +49,7 @@ class ArrayEx extends Array {
             this[index] = this[randomIndex];
             this[randomIndex] = temp;
         }
+        return this;
     }
 
     // sort numerically in place
