@@ -285,6 +285,9 @@ ArrayEx.of = function(...items) {
     return arr;
 }
 
+// Note, this is only needed if you are passing an iterable that is
+// not a sub-class of an array.  If it is a sub-class of an array, then
+// you can just use Array.from() and it will create that sub-class for you
 ArrayEx.from = function(iterable) {
     let arr = new ArrayEx();
     for (let item of iterable) {
