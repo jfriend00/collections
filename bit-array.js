@@ -23,7 +23,11 @@ class BitArray {
         const {i, mask} = this.getPos(index);
         return !!(this.data[i] & mask);
     }
-    // set bit value by index
+    // Set bit value by index
+    // The bitArray is automatically grown to fit and any intervening values are
+    // initialized to false.  This implementation is not sparse.  Uninitialized values will be
+    // false, not undefined.
+    // As such, you can pre-grow and pre-initialize an array with bitArray.set(1000, false);
     set(index, val) {
         if (index < 0) {
             throw new RangeError('bounds error on BitArray');
@@ -47,6 +51,18 @@ class BitArray {
         if (index > this.length) {
             this.length = index;
         }
+    }
+
+    // fill bitArray or range of bitArray with true/false
+    // returns bitArray to allow chaining
+    fill(value, start = 0, end = this.length) {
+        if (start < 0 || start > end) {
+            throw new RangeError('for bitArray.fill(value, start, end) start must be positive and less than or equal to end');
+        }
+        for (let i = start; i < end; i++) {
+            this.set(i, value);
+        }
+        return this;
     }
 
     push(val) {

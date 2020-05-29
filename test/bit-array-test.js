@@ -45,6 +45,22 @@ function testPushPop() {
     }
 }
 
+function testFill() {
+    let b = new BitArray();
+    const lowFill = 10;
+    const highFill = 100;
+    b.fill(true, lowFill, highFill);
+    for (let i = 0; i < highFill; i++) {
+        let val = b.get(i);
+        if (i < lowFill) {
+            assert(val === false, `Expecting value below fill to be false, found ${val}`);
+        } else if (i < highFill) {
+            assert(val === true, `Expecting value in fill to be true, found ${val}`);
+        }
+    }
+}
+
 testPushPop();
+testFill();
 
 console.log('BitArray tests passed');
