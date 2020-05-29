@@ -93,15 +93,11 @@ if (false) {
             origData.array = arr.slice();
             let newVal = prevData.newVal ? prevData.newVal : rand(0, 100);
             let addIndex = arr.add(newVal);
-            if (addIndex !== 0) {
-                if (arr[addIndex - 1] > newVal) {
-                    err(newVal, `Problem with arr[addIndex - 1] < newVal: ${arr[addIndex - 1]}, ${newVal}`)
-                }
+            if (addIndex !== 0 && arr[addIndex - 1] > newVal) {
+                err(newVal, `Problem with arr[addIndex - 1] < newVal: ${arr[addIndex - 1]}, ${newVal}`)
             }
-            if (addIndex + 1 < arr.length) {
-                if (arr[addIndex + 1] < newVal) {
-                    err(newVal, `Problem with arr[addIndex + 1] > newVal: ${newVal}, ${arr[addIndex + 1]}`);
-                }
+            if (addIndex + 1 < arr.length && arr[addIndex + 1] < newVal) {
+                err(newVal, `Problem with arr[addIndex + 1] > newVal: ${newVal}, ${arr[addIndex + 1]}`);
             }
         }
         console.log('Inserting into unsorted array passed.');
