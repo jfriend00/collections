@@ -242,5 +242,13 @@ class SortedArray extends Array {
 
 const setExports = require('./set.js');
 const arrayExports = require('./array.js');
+const bitArrayExports = require('./bit-array.js');
 
-module.exports = { MapArray, MapSet,  SortedArray, ...setExports, ...arrayExports };
+module.exports = {
+    MapArray,
+    MapSet,
+    SortedArray,
+    ...setExports,
+    ...arrayExports,
+    ...bitArrayExports,
+};
