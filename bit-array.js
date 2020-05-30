@@ -254,9 +254,7 @@ class BitArray {
                         if (index >= this.length) {
                             return {done: true};
                         }
-                        let obj = {done: false, value: [index, this.get(index)]};
-                        ++index;
-                        return obj;
+                        return {done: false, value: [index, this.get(index++)]};
                     }
                 }
             }
