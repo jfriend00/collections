@@ -247,14 +247,17 @@ class BitArray {
         if (end < 0) {
             end = this.length + end;
         }
+        if (end > this.length) {
+            end = this.length;
+        }
         if (end < 0 || begin < 0 || end <= begin) {
-            return speciesCreate(this, BitArray);           // return empty bitArray
+            return speciesCreate(this, BitArray);      // return empty bitArray
         }
         // optimization for a full copy
         if (begin === 0 && end === this.length) {
-            speciesCreate(this, BitArray, this);
+            speciesCreate(this, BitArray, this);       // return full copy
         }
-        let b = speciesCreate(this, BitArray);
+        let b = speciesCreate(this, BitArray);         // create empty bitArray that we will populate
         // set size of new BitArray
         b.set(end - begin - 1, 0);
 

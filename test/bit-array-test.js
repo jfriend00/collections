@@ -203,13 +203,8 @@ function testSlice() {
     c = b.slice(-5, b.length - 2);
     assert(c.toString() === '101', `Expecting 101, got ${c.toString()}`);
 
-    try {
-        c = b.slice(3, 1);
-        assert.fail('expecting exception because end < begin on b.slice(3, 1)')
-    } catch(e) {
-        // console.log('Got expected exception');
-    }
-
+    c = b.slice(3, 1);
+    assert(c.length === 0, `Expecting empty bitArray, got ${c.length} length bitArray`);
 }
 
 testPushPop();
