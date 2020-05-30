@@ -6,13 +6,44 @@ function verifyBoolean(target) {
     }
 }
 
+/* constructor accepts
+     new BitArray()
+     new BitArray(number) - this bits from this number will be used to initialize the bitArray
+     new BitArray(string) - a string of 0's and 1's such as "10000101" which will be used
+                            to initialize the BitArray.  The bitArray[0] bit is last in the string
+*/
 
 class BitArray {
-    constructor() {
-        // bits are stored as 32-bit signed integers which means
-        // we can only use 31-bits of data per array slot
+    constructor(initial) {
         this.data = [];
         this.length = 0;
+        if (typeof initial === "undefined") {
+            return;
+        }
+        if (typeof initial === "number") {
+            if (initial < 0) {
+                throw new TypeError('BitArray constructor does not accept negative numbers');
+            }
+            initial = initial.toString(2);      // convert to binary string
+        }
+        if (typeof initial === "string") {
+            // establish the length of the bitArray
+            this.set(initial.length - 1, false);
+
+            // now initialize all the true values
+            let index = 0;
+            for (let i = initial.length - 1; i >= 0; i--) {
+                let chr = initial.charAt(i);
+                if (chr === "1") {
+                    this.set(index, true);
+                } else if (chr !== "0") {
+                    throw new TypeError(`BitArray constructor accepts a string of 1's and 0's - encountered illegal character ${chr}`)
+                }
+                ++index;
+            }
+        } else {
+            throw new TypeError('BitArray constructor accepts new BitArray(), new BitArray(number) or new BitArray(string)');
+        }
     }
     // calculate bit position
     // returns [i, mask]
@@ -171,6 +202,16 @@ class BitArray {
         for (let [index, val] of this.entries()) {
             callback.call(thisArg, val, index, this);
         }
+    }
+
+    // get a string version of the whole bitArray -
+    // useful for debug output or sending as JSON
+    toString() {
+        let output = "";
+        for (let val of this) {
+            output = (val ? "1" : "0") + output;
+        }
+        return output;
     }
 
     // default forward iterator

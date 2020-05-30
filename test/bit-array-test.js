@@ -19,7 +19,6 @@ const testLen = 1000;
 let zeroes = (new Array(testLen)).fill(false);
 let ones = (new Array(testLen)).fill(true);
 let randomArray = ArrayEx.shuffle(zeroes.concat(ones));
-console.log(`Using randomized boolean array, len = ${randomArray.length}`);
 
 let b = new BitArray();
 for (let [index, val] of randomArray.entries()) {
@@ -152,6 +151,30 @@ function testForEach() {
     assert(all.size === b.length, `Found ${all.size} indexes, expecting ${b.length}`);
 }
 
+function testToString() {
+    let b = new BitArray();
+    b.set(0, true);
+    b.set(2, true);
+    b.set(39, true);
+    assert(b.toString() === '1000000000000000000000000000000000000101', `toString() failed to match, got ${b.toString()}`);
+}
+
+function testConstructorString() {
+    let b = new BitArray('1000000000000000000000000000000000000101');
+    [0,2,39].forEach((index) => {
+        assert(b.get(index) === true, `Expecting true value at index ${index}, found false`);
+    });
+    assert(b.toString() === '1000000000000000000000000000000000000101', `toString() failed to match, got ${b.toString()}`);
+}
+
+function testConstructorNumber() {
+    let b = new BitArray(0b1000000000000000000000000000000000000101);
+    [0,2,39].forEach((index) => {
+        assert(b.get(index) === true, `Expecting true value at index ${index}, found false`);
+    });
+    assert(b.toString() === '1000000000000000000000000000000000000101', `toString() failed to match, got ${b.toString()}`);
+}
+
 testPushPop();
 testFill();
 testShifts();
@@ -162,5 +185,8 @@ testShifts();
 testIndexes();
 testIndexOf();
 testForEach();
+testToString();
+testConstructorString();
+testConstructorNumber();
 
 console.log('BitArray tests passed');
