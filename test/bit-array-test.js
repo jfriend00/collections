@@ -182,6 +182,36 @@ function testBackward() {
     }
 }
 
+function testSlice() {
+    let b = new BitArray(0b1110101000000000000000000000000000010101);
+    // both indexes positive
+    let c = b.slice(0,3);
+    assert(c.toString() === '101', `Expecting 101, got ${c.toString()}`);
+
+    // begin index negative
+    c = b.slice(-3);
+    assert(c.toString() === '111', `Expecting 111, got ${c.toString()}`);
+
+    // both params empty
+    c = b.slice();
+    assert(c.toString() === '1110101000000000000000000000000000010101', `Expecting 1110101000000000000000000000000000010101, got ${c.toString()}`);
+
+    // end index negative
+    c = b.slice(-5, -2);
+    assert(c.toString() === '101', `Expecting 101, got ${c.toString()}`);
+
+    c = b.slice(-5, b.length - 2);
+    assert(c.toString() === '101', `Expecting 101, got ${c.toString()}`);
+
+    try {
+        c = b.slice(3, 1);
+        assert.fail('expecting exception because end < begin on b.slice(3, 1)')
+    } catch(e) {
+        // console.log('Got expected exception');
+    }
+
+}
+
 testPushPop();
 testFill();
 testShifts();
@@ -196,5 +226,6 @@ testToString();
 testConstructorString();
 testConstructorNumber();
 testBackward();
+testSlice();
 
 console.log('BitArray tests passed');

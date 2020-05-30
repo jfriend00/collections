@@ -1,3 +1,4 @@
+const { speciesCreate } = require('./utils.js');
 const bitsPerUnit = 31;
 
 function verifyBoolean(target) {
@@ -11,6 +12,7 @@ function verifyBoolean(target) {
      new BitArray(number) - this bits from this number will be used to initialize the bitArray
      new BitArray(string) - a string of 0's and 1's such as "10000101" which will be used
                             to initialize the BitArray.  The bitArray[0] bit is last in the string
+     new BitArray(bitArray) - copy all data from a different bitArray
 */
 
 class BitArray {
@@ -41,6 +43,10 @@ class BitArray {
                 }
                 ++index;
             }
+        } else if (typeof initial === "object" && initial instanceof BitArray) {
+            // clone a different BitArray
+            this.data = initial.data.slice();
+            this.length = initial.length;
         } else {
             throw new TypeError('BitArray constructor accepts new BitArray(), new BitArray(number) or new BitArray(string)');
         }
@@ -92,6 +98,7 @@ class BitArray {
     }
 
     // fill bitArray or range of bitArray with true/false
+    // will grow the array as needed
     // returns bitArray to allow chaining
     fill(value, start = 0, end = this.length) {
         if (start < 0 || start > end) {
@@ -212,6 +219,49 @@ class BitArray {
             output = (val ? "1" : "0") + output;
         }
         return output;
+    }
+
+    /*
+        copy a portion of the bitArray to a new bitArray
+
+        begin
+            Zero-based index at which to begin extraction.
+            A negative index can be used, indicating an offset from the end of the sequence.
+                slice(-2) extracts the last two elements in the sequence.
+            If begin is undefined, slice begins from the index 0.
+            If begin is greater than the index range of the sequence, an empty array is returned.
+        end
+            Zero-based index before which to end extraction. slice extracts up to but not
+                including end. For example, slice(1,4) extracts the second element through
+                the fourth element (elements indexed 1, 2, and 3).
+            A negative index can be used, indicating an offset from the end of the sequence.
+                slice(2,-1) extracts the third element through the second-to-last element in the sequence.
+            If end is omitted, slice extracts through the end of the sequence (arr.length).
+            If end is greater than the length of the sequence, slice extracts through to
+                the end of the sequence (arr.length).
+    */
+    slice(begin = 0, end = this.length) {
+        if (begin < 0) {
+            begin = this.length + begin;
+        }
+        if (end < 0) {
+            end = this.length + end;
+        }
+        if (end < 0 || begin < 0 || end <= begin) {
+            return speciesCreate(this, BitArray);           // return empty bitArray
+        }
+        // optimization for a full copy
+        if (begin === 0 && end === this.length) {
+            speciesCreate(this, BitArray, this);
+        }
+        let b = speciesCreate(this, BitArray);
+        // set size of new BitArray
+        b.set(end - begin - 1, 0);
+
+        for (let j = 0, i = begin; i < end; j++, i++) {
+            b.set(j, this.get(i));
+        }
+        return b;
     }
 
     // default forward iterator
