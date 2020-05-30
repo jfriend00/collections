@@ -15,10 +15,17 @@ function verifyBoolean(target) {
      new BitArray(bitArray) - copy all data from a different bitArray
 */
 
+// secret property names used for our internal length and data variables to
+// keep people from accidentally messing with them
+const _lenName = Symbol('length');
+const _dataName = Symbol('data');
+
 class BitArray {
     constructor(initial) {
-        this.data = [];
-        this.length = 0;
+        // create non-enumerable length and data properties
+        Object.defineProperty(this, _lenName, {value: 0, writable: true});
+        Object.defineProperty(this, _dataName, {value: [], writable: true})
+
         if (typeof initial === "undefined") {
             return;
         }
@@ -30,7 +37,7 @@ class BitArray {
         }
         if (typeof initial === "string") {
             // establish the length of the bitArray
-            this.set(initial.length - 1, false);
+            this.length = initial.length;
 
             // now initialize all the true values
             let index = 0;
@@ -45,14 +52,49 @@ class BitArray {
             }
         } else if (typeof initial === "object" && initial instanceof BitArray) {
             // clone a different BitArray
-            this.data = initial.data.slice();
-            this.length = initial.length;
+            if (initial[_dataName]) {
+                this[_dataName] = initial[_dataName].slice();
+                this[_lenName] = initial.length;
+            } else {
+                // if other BitArray was somehow loaded separately and thus has different symbols,
+                // copy it the slow way bit by bit because we can't get direct access to the data
+                this.length = initial.length;
+                for (let [index, bit] of initial.entries()) {
+                    this.set(index, bit);
+                }
+            }
         } else {
             throw new TypeError('BitArray constructor accepts new BitArray(), new BitArray(number) or new BitArray(string)');
         }
     }
+
+    get length() {
+        return this[_lenName];
+    }
+    set length(len) {
+        // update internal length
+        this[_lenName] = len;
+        const data = this[_dataName];
+        // now see if the internal array needs to grow or shrink to fit new length
+        let { i } = this.getPos(len - 1);
+        let lastBlock = data.length - 1;
+        if (i < lastBlock) {
+            // shrink the array
+            data.length = i + 1;
+        } else if (i > lastBlock) {
+            // grow the array and fill remaining bits with zero
+            let origLength = data.length;
+            data.length = i + 1;
+            for (let j = origLength; j < data.length; j++) {
+                data[j] = 0;
+            }
+        }
+    }
     // calculate bit position
-    // returns [i, mask]
+    // returns [i, bit, mask]
+    // i is which actual array block the bit is in
+    // bit is the numeric bit in that block
+    // mask is a mask for that bit
     getPos(index) {
         let i = Math.floor(index / bitsPerUnit);
         let bit = index % bitsPerUnit;
@@ -65,7 +107,7 @@ class BitArray {
             throw new RangeError('bounds error on BitArray');
         }
         const {i, mask} = this.getPos(index);
-        return !!(this.data[i] & mask);
+        return !!(this[_dataName][i] & mask);
     }
     // Set bit value by index
     // The bitArray is automatically grown to fit and any intervening values are
@@ -77,23 +119,24 @@ class BitArray {
             throw new RangeError('bounds error on BitArray');
         }
         const {i, mask} = this.getPos(index);
+        const data = this[_dataName];
         // auto-grow data to fit
         // see if we need to add onto the data array
-        if (i >= this.data.length) {
+        if (i >= data.length) {
             // fill new bit positions with zeroes
-            for (let q = this.data.length; q < i; q++) {
-                this.data.push(0);
+            for (let q = data.length; q < i; q++) {
+                data.push(0);
             }
         }
         if (val) {
-            this.data[i] |= mask;
+            data[i] |= mask;
         } else {
-            this.data[i] &= ~mask;
+            data[i] &= ~mask;
         }
         // update bitArray length
         ++index;
         if (index > this.length) {
-            this.length = index;
+            this[_lenName] = index;
         }
     }
 
@@ -115,30 +158,20 @@ class BitArray {
     }
 
     pop() {
-        const origLength = this.length;
-        if (!origLength) {
+        if (!this.length) {
             return undefined;
         }
-        let val = this.get(origLength - 1);
+        let val = this.get(this.length - 1);
         --this.length;
-        // now we have to determine if we should delete the last block from the array
-        const { bit, i } = this.getPos(origLength - 1);
-        // if we just popped off the lowest bit in the block, then the block is now empty
-        // and we can drop it from the array
-        if (bit === 0) {
-            --this.data.length;
-        }
         return val;
     }
 
     // add bit to the start of the array
     unshift(val) {
         // pre-grow the data array (if necessary by setting new length to be zero)
-        // then, put the length back so our shifting is correct
-        this.set(this.length, 0);
-        --this.length;
+        ++this.length;
 
-        const data = this.data;
+        const data = this[_dataName];
         const highBitMask = 1 << (bitsPerUnit - 1);
         const signBitMask = ~(1 << bitsPerUnit);
         let highBit, prevHighBit, newData;
@@ -161,7 +194,6 @@ class BitArray {
             prevHighBit = highBit;
             data[i] = newData;
         }
-        ++this.length;          // count our new bit
     }
 
     // remove first bit from the array
@@ -172,7 +204,7 @@ class BitArray {
         const val = this.get(0);
         const highBitMask = 1 << (bitsPerUnit - 1);
         // now we have to move every block down by one bit
-        let data = this.data;
+        let data = this[_dataName];
         let lowBit;
         for (let i = 0; i < data.length; i++) {
             lowBit = data[i] & 1;           // save lowBit
@@ -183,11 +215,6 @@ class BitArray {
             }
         }
         --this.length;
-        // get info on last bit so we can see if we still need the last block of the array
-        const { i } = this.getPos(this.length - 1);
-        if (this.data.length > (i + 1)) {
-            this.data.length = i + 1;
-        }
         return val;
     }
 
@@ -265,6 +292,47 @@ class BitArray {
             b.set(j, this.get(i));
         }
         return b;
+    }
+
+    // remove bits from the array
+    // optionally return the bits in a new bitArray
+    splice(start, deleteCount, returnData = false) {
+        if (start < 0) {
+            start = this.length + start;
+        }
+        if (start + deleteCount > this.length) {
+            deleteCount = this.length - start;
+        }
+        if (start < 0 || start >= this.length || deleteCount <= 0) {
+            if (returnData) {
+                // return empty BitArray
+                return speciesCreate(this, BitArray);
+            } else {
+                return;
+            }
+        }
+        let b;
+        if (returnData) {
+            b = speciesCreate(this, BitArray);
+        }
+        // copy down bits from above the deleteCount position to start position
+        let src = start + deleteCount;
+        let dest = start;
+        let i = 0;
+        while (src < this.length) {
+            let val = this.get(src);
+            if (b) {
+                b.set(i, val);
+            }
+            this.set(dest, val);
+            ++dest;
+            ++src;
+            ++i;
+        }
+        this.length -= deleteCount;
+        if (b) {
+            return b;
+        }
     }
 
     // default forward iterator

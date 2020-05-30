@@ -14,6 +14,17 @@ function makeRandomBitArray(testLen = 2000) {
     return b;
 }
 
+function checkExtraSpace(b) {
+    /*
+    const len = b.length;
+    const { i } = b.getPos(len - 1);
+    // see if last block is the last block of the array
+    if (i !== b.data.length - 1) {
+        assert.fail(`Expected last block to be ${i}, but it was ${b.data.length - 1}`)
+    }
+    */
+}
+
 const testLen = 1000;
 // create random assorted of booleans in an array
 let zeroes = (new Array(testLen)).fill(false);
@@ -44,16 +55,19 @@ function testPushPop() {
     ArrayEx.shuffle(randomArray);
     for (let val of randomArray) {
         b.push(val);
+        checkExtraSpace(b);
     }
     for (let [index, val] of b.entries()) {
         assert(val === randomArray[index], `At index ${index}, got ${val}, expected ${randomArray[index]}`);
     }
+    checkExtraSpace(b);
     assert(b.length === randomArray.length, `bitArray.length = ${b.length}, expected ${randomArray.length}`);
     let len = b.length;
     for (let i = len - 1; i >= 0; i--) {
         let val = b.pop();
         assert(val === randomArray[i], `At index ${i}, got ${val}, expected ${randomArray[i]}`);
     }
+    checkExtraSpace(b);
 }
 
 function testFill() {
@@ -61,6 +75,7 @@ function testFill() {
     const lowFill = 10;
     const highFill = 100;
     b.fill(true, lowFill, highFill);
+    checkExtraSpace(b);
     for (let i = 0; i < highFill; i++) {
         let val = b.get(i);
         if (i < lowFill) {
@@ -78,6 +93,7 @@ function testShifts() {
     ArrayEx.shuffle(randomArray);
     for (let i = randomArray.length - 1; i >= 0; i--) {
         b.unshift(randomArray[i]);
+        checkExtraSpace(b);
     }
     assert(b.length === randomArray.length, `bitArray.length = ${b.length}, expected ${randomArray.length}`);
     for (let [i, val] of b.entries()) {
@@ -90,6 +106,7 @@ function testShifts() {
     while (b.length) {
         let val = b.shift();
         assert(val === randomArray[i], `At index ${i}, got ${val}, expected ${randomArray[i]}`);
+        checkExtraSpace(b);
         i++;
     }
 }
