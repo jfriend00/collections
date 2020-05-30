@@ -227,6 +227,22 @@ class BitArray {
             }
         }
     }
+    // a backward iteration of [index, val]
+    backwardEntries() {
+        return {
+            [Symbol.iterator]: () => {
+                let index = this.length - 1;
+                return {
+                    next: () => {
+                        if (index < 0) {
+                            return {done: true};
+                        }
+                        return {done: false, value: [index, this.get(index--)]};
+                    }
+                }
+            }
+        }
+    }
     // iterator for [index, val]
     // enables use of "for (let [index, val] of bitArray) {...}"
     entries() {

@@ -175,6 +175,13 @@ function testConstructorNumber() {
     assert(b.toString() === '1000000000000000000000000000000000000101', `toString() failed to match, got ${b.toString()}`);
 }
 
+function testBackward() {
+    let b = makeRandomBitArray();
+    for (let [index, val] of b.backwardEntries()) {
+        assert(b.get(index) === val, `Expecting ${b.get(index)} at index ${index}, found ${val}`);
+    }
+}
+
 testPushPop();
 testFill();
 testShifts();
@@ -188,5 +195,6 @@ testForEach();
 testToString();
 testConstructorString();
 testConstructorNumber();
+testBackward();
 
 console.log('BitArray tests passed');
