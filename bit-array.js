@@ -1,5 +1,12 @@
 const bitsPerUnit = 31;
 
+function verifyBoolean(target) {
+    if (!(target === true || target === false)) {
+        throw new TypeError('bitArray.indexes(boolean) must be passed a boolean');
+    }
+}
+
+
 class BitArray {
     constructor() {
         // bits are stored as 32-bit signed integers which means
@@ -146,6 +153,26 @@ class BitArray {
         return val;
     }
 
+    // find first index that has target value
+    indexOf(target, fromIndex = 0) {
+        verifyBoolean(target);
+        for (let i = fromIndex; i < this.length; i++) {
+            if (this.get(i) === target) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    forEach(callback, thisArg = null) {
+        if (typeof callback !== "function") {
+            throw new TypeError('First argument to .forEach(fn) must be a callback function');
+        }
+        for (let [index, val] of this.entries()) {
+            callback.call(thisArg, val, index, this);
+        }
+    }
+
     // default forward iterator
     // enables use of "for (let val of bitArray) {...}"
     [Symbol.iterator]() {
@@ -173,6 +200,31 @@ class BitArray {
                         let obj = {done: false, value: [index, this.get(index)]};
                         ++index;
                         return obj;
+                    }
+                }
+            }
+        }
+    }
+    // iterator for true or false indexes
+    // the iterator supplies the indexes of all the desired values
+    // the value itself is not returned since, by definition, you asked
+    // for all true or all false so you know what the matching value is
+    indexes(target) {
+        verifyBoolean(target);
+        return {
+            [Symbol.iterator]: () => {
+                let index = 0;
+                return {
+                    next: () => {
+                        let val;
+                        while(index < this.length) {
+                            val = this.get(index);
+                            if (val === target) {
+                                return {done: false, value: index++};
+                            }
+                            ++index;
+                        }
+                        return {done: true};
                     }
                 }
             }

@@ -2,6 +2,18 @@ const { BitArray } = require('../bit-array.js');
 const { ArrayEx } = require('../array.js');
 const assert = require('assert').strict;
 
+function makeRandomBitArray(testLen = 2000) {
+    // create random assorted of booleans in an array
+    let zeroes = (new Array(testLen / 2)).fill(false);
+    let ones = (new Array(testLen / 2)).fill(true);
+    let r = ArrayEx.shuffle(zeroes.concat(ones));
+    let b = new BitArray();
+    for (let [index, val] of r.entries()) {
+        b.set(index, val);
+    }
+    return b;
+}
+
 const testLen = 1000;
 // create random assorted of booleans in an array
 let zeroes = (new Array(testLen)).fill(false);
@@ -83,8 +95,72 @@ function testShifts() {
     }
 }
 
+function testIndexes() {
+    let b = makeRandomBitArray();
+    let all = new Set();
+    for (let index of b.indexes(true)) {
+        assert(b.get(index) === true, `Expecting true at index ${index}, got false`);
+        all.add(index);
+    }
+    for (let index of b.indexes(false)) {
+        assert(b.get(index) === false, `Expecting false at index ${index}, got true`);
+        all.add(index);
+    }
+    // make sure we got all indexes
+    assert(all.size === b.length, `Found ${all.size} indexes, expecting ${b.length}`);
+}
+
+function testIndexOf() {
+    let b = makeRandomBitArray();
+    let all = new Set();
+    let i = 0;
+    while(true) {
+        let index = b.indexOf(true, i);
+        if (index < 0) {
+            break;
+        } else {
+            assert(b.get(index) === true, `Expecting true at index ${index}, found false`);
+            all.add(index);
+            i = index + 1;
+        }
+    }
+    i = 0;
+    while(true) {
+        let index = b.indexOf(false, i);
+        if (index < 0) {
+            break;
+        } else {
+            assert(b.get(index) === false, `Expecting true at index ${index}, found true`);
+            all.add(index);
+            i = index + 1;
+        }
+    }
+    // make sure we got all indexes
+    assert(all.size === b.length, `Found ${all.size} indexes, expecting ${b.length}`);
+}
+
+function testForEach() {
+    let b = makeRandomBitArray();
+    let all = new Set();
+    let obj = {};
+    b.forEach(function(val, index, array) {
+        assert(this === obj, 'Expecting this === obj');
+        assert(b.get(index) === val, `Expecting ${b.get(index)} at index ${index}, got ${val}`);
+        all.add(index);
+    }, obj);
+    // make sure we got all indexes
+    assert(all.size === b.length, `Found ${all.size} indexes, expecting ${b.length}`);
+}
+
 testPushPop();
 testFill();
 testShifts();
+testShifts();
+testShifts();
+testShifts();
+testShifts();
+testIndexes();
+testIndexOf();
+testForEach();
 
 console.log('BitArray tests passed');
