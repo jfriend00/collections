@@ -85,7 +85,69 @@ class BitArray {
         }
         return val;
     }
-    // forward iterator
+
+    // add bit to the start of the array
+    unshift(val) {
+        // pre-grow the data array (if necessary by setting new length to be zero)
+        // then, put the length back so our shifting is correct
+        this.set(this.length, 0);
+        --this.length;
+
+        const data = this.data;
+        const highBitMask = 1 << (bitsPerUnit - 1);
+        const signBitMask = ~(1 << bitsPerUnit);
+        let highBit, prevHighBit, newData;
+        for (let i = 0; i < data.length; i++) {
+            highBit = data[i] & highBitMask;            // isolate high bit
+            newData = (data[i] << 1) & signBitMask;     // clear sign bit
+
+            if (i === 0) {
+                // if it's the first block, then add our val at the bottom
+                if (val) {
+                    newData |= 1;
+                }
+            } else {
+                // if not the first block, then add the previous high bit carryover
+                // at the bottom of the block
+                if (prevHighBit) {
+                    newData |= 1;
+                }
+            }
+            prevHighBit = highBit;
+            data[i] = newData;
+        }
+        ++this.length;          // count our new bit
+    }
+
+    // remove first bit from the array
+    shift() {
+        if (!this.length) {
+            return undefined;
+        }
+        const val = this.get(0);
+        const highBitMask = 1 << (bitsPerUnit - 1);
+        // now we have to move every block down by one bit
+        let data = this.data;
+        let lowBit;
+        for (let i = 0; i < data.length; i++) {
+            lowBit = data[i] & 1;           // save lowBit
+            data[i] >>>= 1;                 // zero-fill right shift
+            // put lowBit into previous block
+            if (i !== 0 && lowBit) {
+                data[i - 1] |= highBitMask;    // this bit will have been previous zero-filled
+            }
+        }
+        --this.length;
+        // get info on last bit so we can see if we still need the last block of the array
+        const { i } = this.getPos(this.length - 1);
+        if (this.data.length > (i + 1)) {
+            this.data.length = i + 1;
+        }
+        return val;
+    }
+
+    // default forward iterator
+    // enables use of "for (let val of bitArray) {...}"
     [Symbol.iterator]() {
         let index = 0;
         return {
@@ -97,7 +159,8 @@ class BitArray {
             }
         }
     }
-    // iterator for [index, value]
+    // iterator for [index, val]
+    // enables use of "for (let [index, val] of bitArray) {...}"
     entries() {
         return {
             [Symbol.iterator]: () => {

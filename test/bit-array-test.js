@@ -60,7 +60,31 @@ function testFill() {
     }
 }
 
+function testShifts() {
+    // test .unshift()
+
+    let b = new BitArray();
+    ArrayEx.shuffle(randomArray);
+    for (let i = randomArray.length - 1; i >= 0; i--) {
+        b.unshift(randomArray[i]);
+    }
+    assert(b.length === randomArray.length, `bitArray.length = ${b.length}, expected ${randomArray.length}`);
+    for (let [i, val] of b.entries()) {
+        assert(val === randomArray[i], `At index ${i}, got ${val}, expected ${randomArray[i]}`);
+    }
+
+    // now test out .shift()
+
+    let i = 0;
+    while (b.length) {
+        let val = b.shift();
+        assert(val === randomArray[i], `At index ${i}, got ${val}, expected ${randomArray[i]}`);
+        i++;
+    }
+}
+
 testPushPop();
 testFill();
+testShifts();
 
 console.log('BitArray tests passed');
