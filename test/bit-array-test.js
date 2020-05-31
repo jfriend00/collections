@@ -233,19 +233,25 @@ function testInsert() {
     b = new BitArray(0b1110101000000000000000000000000000010101);
     b._insert(b.length, 3);
     assert(b.toString() === '0001110101000000000000000000000000000010101', 'insert failed #3');
+    let ok1 = true;
+    let ok2 = false;
     try {
         b._insert(b.length + 1, 3);
-        assert.fail(`Expecting exception that didn't happen on ._insert() for start beyond end`);
+        ok1 = false;
     } catch(e) {
         // we are expecting this exception
+        ok2 = true;
     }
+    assert(ok1 && ok2, `Expecting exception that didn't happen on ._insert() for start beyond end`);
+    ok2 = false;
     try {
         b._insert(-1, 3);
-        assert.fail(`Expecting exception that didn't happen on ._insert() for negative start`);
+        ok1 = false;
     } catch(e) {
         // we are expecting this exception
+        ok2 = true;
     }
-    b = new BitArray(0b1110101000000000000000000000000000010101);
+    assert(ok1 && ok2, `Expecting exception that didn't happen on ._insert() for negative start`);    b = new BitArray(0b1110101000000000000000000000000000010101);
     b._insert(0, 4, [true, true, true, false]);
     assert(b.toString() === '11101010000000000000000000000000000101010111', 'insert failed #4');
 }
@@ -265,12 +271,34 @@ function testToJson() {
     assert(b.toString() === c.toString(), `Test of toJson() and constructor(data) failed.\n${b.toString()}\n${c.toString()}`);
 }
 
+
+const allBitsOnBinary = 0b1111111111111111111111111111111;
+const allBitsOnHex = 0x7fffffff;
+const allBitsOnStr = "1111111111111111111111111111111";
+const tooManyBits = 0x1ffffffff;
+
 function testLength() {
     let b = new BitArray({data: [0xFFFFFF, 0xFFFFFF], length: 6});
     let d = b.toArray();
-    assert(d.data[0].toString(2) === '111111', `Expected length to be truncated to 6, got ${JSON.stringify(d.data.toString(2))}`);
+    assert(d.data[0].toString(2) === '111111', `Expected length to be truncated to 6, got ${d.data[0].toString(2)}`);
     assert(d.data.length === 1, `Expected d.data length to be 1, found ${d.data.length}`);
 
+    b = new BitArray({data: [allBitsOnHex, allBitsOnHex, allBitsOnHex, allBitsOnHex], length: 31});
+    d = b.toArray();
+    assert(d.data[0].toString(2) === allBitsOnStr, `Expected length to be truncated to ${allBitsOnStr.length}, got ${d.data[0].toString(2)}`);
+    assert(d.data.length === 1, `Expected d.data length to be 1, found ${d.data.length}`);
+
+    let ok1 = true;
+    let ok2 = false;
+    try {
+        b = new BitArray({data: [tooManyBits, tooManyBits, tooManyBits, tooManyBits], length: 31});
+        // not supposed to get here
+        ok1 = false
+    } catch(e) {
+        // expect to get here
+        ok2 = true;
+    }
+    assert(ok1 && ok2, `Expected exception that didn't happen for numbers in the incoming array that are too large`);
 }
 
 testPushPop();
