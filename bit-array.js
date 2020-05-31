@@ -1,6 +1,7 @@
 const { speciesCreate } = require('./utils.js');
 const bitsPerUnit = 31;
 const allBitsOn = 0b1111111111111111111111111111111;
+const highUsableBit = 1 << (bitsPerUnit - 1);
 
 function verifyBoolean(target) {
     if (!(target === true || target === false)) {
@@ -72,6 +73,13 @@ class BitArray {
                    Array.isArray(initial.data) &&
                    Number.isInteger(initial.length) &&
                    initial.length >= 0) {
+           // check the incoming data to make sure that none of the values exceed 31 bits
+           // because that could cause unexpected results and we're only using 31 bits
+           for (let [index, val] of initial.data.entries()) {
+               if (val > allBitsOn) {
+                   throw new RangeError(`Incoming array of data contains a value ${val} that exceeds ${bitsPerUnit} bits in position ${index}`);
+               }
+           }
            this[kDataName] = initial.data.slice();
            this.length = initial.length;
         } else {
@@ -83,23 +91,13 @@ class BitArray {
         return this[kLenName];
     }
     set length(len) {
-        // FIXME: this doesn't yet clear bits we've removed from the bitArray,
-        // but not removed from the data array, but other functions count
-        // on extra bits in the last block of the data array already being zeroed
-
         // update internal length
         this[kLenName] = len;
         const data = this[kDataName];
         let { i, mask, bit } = this.getPos(len - 1);
 
         // in this last block, clear any bits above our last bit
-        let tempMask = mask << 1;
-        let clearMask = 0;
-        for (let i = bit + 1; i < bitsPerUnit; i++) {
-            clearMask |= tempMask;
-            tempMask <<= 1;
-        }
-        data[i] &= ~clearMask;
+        data[i] &= ((mask * 2) - 1);
 
         // now see if the internal array needs to grow or shrink to fit new length
         let lastBlock = data.length - 1;
