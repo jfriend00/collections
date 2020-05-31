@@ -1,5 +1,6 @@
 const { speciesCreate } = require('./utils.js');
 const bitsPerUnit = 31;
+const maxBitwise = 31;       // bitwise operations
 
 function verifyBoolean(target) {
     if (!(target === true || target === false)) {
@@ -13,6 +14,7 @@ function verifyBoolean(target) {
      new BitArray(string) - a string of 0's and 1's such as "10000101" which will be used
                             to initialize the BitArray.  The bitArray[0] bit is last in the string
      new BitArray(bitArray) - copy all data from a different bitArray
+     new BitArray(Array)    - copy all data from a regular array of Booleans
 */
 
 // secret property names used for our internal length and data variables to
@@ -63,8 +65,10 @@ class BitArray {
                     this.set(index, bit);
                 }
             }
+        } else if (Array.isArray(initial)) {
+            this._insert(0, initial.length, initial);
         } else {
-            throw new TypeError('BitArray constructor accepts new BitArray(), new BitArray(number) or new BitArray(string)');
+            throw new TypeError('BitArray constructor accepts new BitArray(), new BitArray(number), newBitArray(array) or new BitArray(string)');
         }
     }
 
@@ -292,6 +296,64 @@ class BitArray {
             b.set(j, this.get(i));
         }
         return b;
+    }
+
+
+    // remove bits from the array by copying all the bits after the removed
+    // spot down by cnt spaces
+    _remove(start, cnt) {
+        let src = start + cnt;
+        let dest = start;
+        const len = this.length;
+        while (src < len) {
+            let val = this.get(src);
+            this.set(dest, val);
+            ++src;
+            ++dest;
+        }
+        // shrink the array for the removed bits
+        this.length = len - cnt;
+        return this;
+    }
+
+    // insert bits into the array by moving all the bits after the insertion point up
+    _insert(start, cnt, data) {
+        if (cnt === 0) return this;
+        if (data && !Array.isArray(data)) {
+            throw new TypeError(`data passed to _insert() must be a regular array`);
+        }
+        if (data && data.length < cnt) {
+            throw new RangeError(`data passed to _insert() is not at least cnt  in length`);
+        }
+        if (cnt < 0) {
+            throw new RangeError(`cnt for _insert() can't be negative`);
+        }
+        if (start > this.length) {
+            throw new RangeError(`start for _insert() is beyond end of the array`);
+        }
+        // grow the array to fit the new bits
+        this.length += cnt;
+
+        // starting at the end of the array - cnt, copy from there to the end of the array
+        // decrementing src and target as we go
+        let dest = this.length - 1;
+        let src = dest - cnt;
+        let newBitLimit = start + cnt;
+        let dataIndex = cnt - 1;    // start from the end
+        while (src >= start) {
+            this.set(dest, this.get(src));
+            // clear the value where the inserted bits will be
+            if (src < newBitLimit) {
+                if (data) {
+                    this.set(src, data[dataIndex--]);
+                } else {
+                    this.set(src, false);
+                }
+            }
+            --src;
+            --dest;
+        }
+        return this;
     }
 
     // remove bits from the array

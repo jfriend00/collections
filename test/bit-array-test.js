@@ -224,6 +224,32 @@ function testSlice() {
     assert(c.length === 0, `Expecting empty bitArray, got ${c.length} length bitArray`);
 }
 
+function testInsert() {
+    let b = new BitArray(0b1110101000000000000000000000000000010101);
+    b._insert(1, 2);
+    assert(b.toString() === '111010100000000000000000000000000001010001', 'insert failed #1');
+    b._insert(0, 20);
+    assert(b.toString() === '11101010000000000000000000000000000101000100000000000000000000', 'insert failed #2');
+    b = new BitArray(0b1110101000000000000000000000000000010101);
+    b._insert(b.length, 3);
+    assert(b.toString() === '0001110101000000000000000000000000000010101', 'insert failed #3');
+    try {
+        b._insert(b.length + 1, 3);
+        assert.fail(`Expecting exception that didn't happen on ._insert() for start beyond end`);
+    } catch(e) {
+        // we are expecting this exception
+    }
+    try {
+        b._insert(-1, 3);
+        assert.fail(`Expecting exception that didn't happen on ._insert() for negative start`);
+    } catch(e) {
+        // we are expecting this exception
+    }
+    b = new BitArray(0b1110101000000000000000000000000000010101);
+    b._insert(0, 4, [true, true, true, false]);
+    assert(b.toString() === '11101010000000000000000000000000000101010111', 'insert failed #4');
+}
+
 testPushPop();
 testFill();
 testShifts();
@@ -239,5 +265,6 @@ testConstructorString();
 testConstructorNumber();
 testBackward();
 testSlice();
+testInsert();
 
 console.log('BitArray tests passed');
