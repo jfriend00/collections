@@ -1,6 +1,5 @@
 const { speciesCreate } = require('./utils.js');
 const bitsPerUnit = 31;
-const maxBitwise = 31;       // bitwise operations
 
 function verifyBoolean(target) {
     if (!(target === true || target === false)) {
@@ -15,6 +14,7 @@ function verifyBoolean(target) {
                             to initialize the BitArray.  The bitArray[0] bit is last in the string
      new BitArray(bitArray) - copy all data from a different bitArray
      new BitArray(Array)    - copy all data from a regular array of Booleans
+     new BitArray({data: array, length: length}) - data format from bitArray.toArray()
 */
 
 // secret property names used for our internal length and data variables to
@@ -67,6 +67,12 @@ class BitArray {
             }
         } else if (Array.isArray(initial)) {
             this._insert(0, initial.length, initial);
+        } else if (typeof initial === "object" &&
+                   Array.isArray(initial.data) &&
+                   Number.isInteger(initial.length) &&
+                   initial.length >= 0) {
+           this[_dataName] = initial.data.slice();
+           this.length = initial.length;
         } else {
             throw new TypeError('BitArray constructor accepts new BitArray(), new BitArray(number), newBitArray(array) or new BitArray(string)');
         }
@@ -95,7 +101,7 @@ class BitArray {
         }
     }
     // calculate bit position
-    // returns [i, bit, mask]
+    // returns {i, bit, mask}
     // i is which actual array block the bit is in
     // bit is the numeric bit in that block
     // mask is a mask for that bit
@@ -250,6 +256,25 @@ class BitArray {
             output = (val ? "1" : "0") + output;
         }
         return output;
+    }
+
+    // Useful for sending as JSON or storing somehow
+    // Note: length has to be stored also because the array of data by
+    // itself does not indicate how many 0's are part of the bitmap in the
+    // last item of the array.
+    //
+    // There are 31 bits of the bitArray stored per array entry
+    // This is because Javascript's bitwise operators are limited to
+    // 31 bits of unsigned work, even though there are 53 bits available
+    // in Number.MAX_SAFE_INTEGER.
+    //
+    // Note: The constructor will accept this object when creating a BitArray.
+    toArray() {
+        return {data: this[_dataName].slice(), length: this.length};
+    }
+
+    toJson() {
+        return JSON.stringify(this.toArray());
     }
 
     /*

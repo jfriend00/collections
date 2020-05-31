@@ -250,6 +250,21 @@ function testInsert() {
     assert(b.toString() === '11101010000000000000000000000000000101010111', 'insert failed #4');
 }
 
+function testToArray() {
+    let b = makeRandomBitArray();
+    let data = b.toArray();
+    let c = new BitArray(data);
+    assert(b.toString() === c.toString(), `Test of toArray() and constructor(data) failed.\n${b.toString()}\n${c.toString()}`);
+}
+
+function testToJson() {
+    let b = makeRandomBitArray();
+    let data = b.toJson();
+    let obj = JSON.parse(data);
+    let c = new BitArray(obj);
+    assert(b.toString() === c.toString(), `Test of toJson() and constructor(data) failed.\n${b.toString()}\n${c.toString()}`);
+}
+
 testPushPop();
 testFill();
 testShifts();
@@ -266,5 +281,7 @@ testConstructorNumber();
 testBackward();
 testSlice();
 testInsert();
+testToArray();
+testToJson();
 
 console.log('BitArray tests passed');
