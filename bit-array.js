@@ -1,5 +1,6 @@
 const { speciesCreate } = require('./utils.js');
 const bitsPerUnit = 31;
+const allBitsOn = 0b1111111111111111111111111111111;
 
 function verifyBoolean(target) {
     if (!(target === true || target === false)) {
@@ -19,14 +20,14 @@ function verifyBoolean(target) {
 
 // secret property names used for our internal length and data variables to
 // keep people from accidentally messing with them
-const _lenName = Symbol('length');
-const _dataName = Symbol('data');
+const kLenName = Symbol('length');
+const kDataName = Symbol('data');
 
 class BitArray {
     constructor(initial) {
         // create non-enumerable length and data properties
-        Object.defineProperty(this, _lenName, {value: 0, writable: true});
-        Object.defineProperty(this, _dataName, {value: [], writable: true})
+        Object.defineProperty(this, kLenName, {value: 0, writable: true});
+        Object.defineProperty(this, kDataName, {value: [], writable: true})
 
         if (typeof initial === "undefined") {
             return;
@@ -54,9 +55,9 @@ class BitArray {
             }
         } else if (typeof initial === "object" && initial instanceof BitArray) {
             // clone a different BitArray
-            if (initial[_dataName]) {
-                this[_dataName] = initial[_dataName].slice();
-                this[_lenName] = initial.length;
+            if (initial[kDataName]) {
+                this[kDataName] = initial[kDataName].slice();
+                this[kLenName] = initial.length;
             } else {
                 // if other BitArray was somehow loaded separately and thus has different symbols,
                 // copy it the slow way bit by bit because we can't get direct access to the data
@@ -71,22 +72,36 @@ class BitArray {
                    Array.isArray(initial.data) &&
                    Number.isInteger(initial.length) &&
                    initial.length >= 0) {
-           this[_dataName] = initial.data.slice();
+           this[kDataName] = initial.data.slice();
            this.length = initial.length;
         } else {
-            throw new TypeError('BitArray constructor accepts new BitArray(), new BitArray(number), newBitArray(array) or new BitArray(string)');
+            throw new TypeError('Invalid arguments to constructor');
         }
     }
 
     get length() {
-        return this[_lenName];
+        return this[kLenName];
     }
     set length(len) {
+        // FIXME: this doesn't yet clear bits we've removed from the bitArray,
+        // but not removed from the data array, but other functions count
+        // on extra bits in the last block of the data array already being zeroed
+
         // update internal length
-        this[_lenName] = len;
-        const data = this[_dataName];
+        this[kLenName] = len;
+        const data = this[kDataName];
+        let { i, mask, bit } = this.getPos(len - 1);
+
+        // in this last block, clear any bits above our last bit
+        let tempMask = mask << 1;
+        let clearMask = 0;
+        for (let i = bit + 1; i < bitsPerUnit; i++) {
+            clearMask |= tempMask;
+            tempMask <<= 1;
+        }
+        data[i] &= ~clearMask;
+
         // now see if the internal array needs to grow or shrink to fit new length
-        let { i } = this.getPos(len - 1);
         let lastBlock = data.length - 1;
         if (i < lastBlock) {
             // shrink the array
@@ -117,7 +132,7 @@ class BitArray {
             throw new RangeError('bounds error on BitArray');
         }
         const {i, mask} = this.getPos(index);
-        return !!(this[_dataName][i] & mask);
+        return !!(this[kDataName][i] & mask);
     }
     // Set bit value by index
     // The bitArray is automatically grown to fit and any intervening values are
@@ -129,7 +144,7 @@ class BitArray {
             throw new RangeError('bounds error on BitArray');
         }
         const {i, mask} = this.getPos(index);
-        const data = this[_dataName];
+        const data = this[kDataName];
         // auto-grow data to fit
         // see if we need to add onto the data array
         if (i >= data.length) {
@@ -146,7 +161,7 @@ class BitArray {
         // update bitArray length
         ++index;
         if (index > this.length) {
-            this[_lenName] = index;
+            this[kLenName] = index;
         }
     }
 
@@ -181,7 +196,7 @@ class BitArray {
         // pre-grow the data array (if necessary by setting new length to be zero)
         ++this.length;
 
-        const data = this[_dataName];
+        const data = this[kDataName];
         const highBitMask = 1 << (bitsPerUnit - 1);
         const signBitMask = ~(1 << bitsPerUnit);
         let highBit, prevHighBit, newData;
@@ -214,7 +229,7 @@ class BitArray {
         const val = this.get(0);
         const highBitMask = 1 << (bitsPerUnit - 1);
         // now we have to move every block down by one bit
-        let data = this[_dataName];
+        let data = this[kDataName];
         let lowBit;
         for (let i = 0; i < data.length; i++) {
             lowBit = data[i] & 1;           // save lowBit
@@ -270,7 +285,7 @@ class BitArray {
     //
     // Note: The constructor will accept this object when creating a BitArray.
     toArray() {
-        return {data: this[_dataName].slice(), length: this.length};
+        return {data: this[kDataName].slice(), length: this.length};
     }
 
     toJson() {

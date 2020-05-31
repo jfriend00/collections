@@ -265,6 +265,14 @@ function testToJson() {
     assert(b.toString() === c.toString(), `Test of toJson() and constructor(data) failed.\n${b.toString()}\n${c.toString()}`);
 }
 
+function testLength() {
+    let b = new BitArray({data: [0xFFFFFF, 0xFFFFFF], length: 6});
+    let d = b.toArray();
+    assert(d.data[0].toString(2) === '111111', `Expected length to be truncated to 6, got ${JSON.stringify(d.data.toString(2))}`);
+    assert(d.data.length === 1, `Expected d.data length to be 1, found ${d.data.length}`);
+
+}
+
 testPushPop();
 testFill();
 testShifts();
@@ -283,5 +291,6 @@ testSlice();
 testInsert();
 testToArray();
 testToJson();
+testLength();
 
 console.log('BitArray tests passed');
