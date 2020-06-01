@@ -331,6 +331,20 @@ function testLength() {
     assert(ok1 && ok2, `Expected exception that didn't happen for numbers in the incoming array that are too large`);
 }
 
+function testToBooleanArray() {
+    let b = makeRandomBitArray();
+    let array = b.toBooleanArray();
+    assert(b.length === array.length, `Array lengths not the same: expected ${b.length}, found ${array.length}`);
+    for (let [index, val] of b.entries()) {
+        assert(val === array[index], `Expected ${val}, found ${array[index]} at index ${index}`);
+    }
+    b = new BitArray(0b1110101000000000000000000000000000010101);
+    array = b.toBooleanArray();
+    for (let i = 0; i < array.length; i++) {
+        assert(b.get(i) === array[i], `Expected ${b.get(i)}, found ${array[i]} at index ${i}`);
+    }
+}
+
 testPushPop();
 testFill();
 testShifts();
@@ -351,5 +365,6 @@ testRemove();
 testToArray();
 testToJson();
 testLength();
+testToBooleanArray();
 
 console.log('BitArray tests passed');

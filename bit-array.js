@@ -293,6 +293,15 @@ class BitArray {
         return {data: this[kDataName].slice(), length: this.length};
     }
 
+    // return an array of booleans that contains identical values to the bitArray
+    toBooleanArray() {
+        let results = new Array(this.length);
+        for (let [index, val] of this.entries()) {
+            results[index] = val;
+        }
+        return results;
+    }
+
     toJson() {
         return JSON.stringify(this.toArray());
     }
