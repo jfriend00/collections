@@ -2,6 +2,14 @@ const { BitArray } = require('../bit-array.js');
 const { ArrayEx } = require('../array.js');
 const assert = require('assert').strict;
 
+const allBitsOnBinary = 0b1111111111111111111111111111111;
+const allBitsOnHex = 0x7fffffff;
+const allBitsOn = 0x7fffffff;
+const allBitsOnStr = "1111111111111111111111111111111";
+const tooManyBits = 0x1ffffffff;
+
+
+
 function makeRandomBitArray(testLen = 2000) {
     // create random assorted of booleans in an array
     let zeroes = (new Array(testLen / 2)).fill(false);
@@ -251,9 +259,36 @@ function testInsert() {
         // we are expecting this exception
         ok2 = true;
     }
-    assert(ok1 && ok2, `Expecting exception that didn't happen on ._insert() for negative start`);    b = new BitArray(0b1110101000000000000000000000000000010101);
+    assert(ok1 && ok2, `Expecting exception that didn't happen on ._insert() for negative start`);
+    b = new BitArray(0b1110101000000000000000000000000000010101);
     b._insert(0, 4, [true, true, true, false]);
     assert(b.toString() === '11101010000000000000000000000000000101010111', 'insert failed #4');
+}
+
+function testRemove() {
+    let b = new BitArray(0b1110101000000000000000000000000000010101);
+
+    // remove first bit
+    b._remove(0,1);
+    assert(b.toString() === '111010100000000000000000000000000001010', 'remove failed #1');
+
+    // remove last bit
+    b._remove(b.length - 1, 1);
+    assert(b.toString() === '11010100000000000000000000000000001010', 'remove failed #2');
+
+    // remove too many off the end
+    b = new BitArray(0b1110101000000000000000000000000000010101);
+    b._remove(b.length - 3, 10);
+    assert(b.toString() === '0101000000000000000000000000000010101', 'remove failed #3');
+
+    b = new BitArray({data: [allBitsOn, allBitsOn, allBitsOn, allBitsOn], length: 31*4});
+
+    // remove a block of bits that span across numbers in the middle
+    b._remove(31, 62);
+    let d = b.toArray();
+    assert(d.length === 62, `_remove(): Expecting length of 62, got ${d.length}`);
+    assert(d.data.length === 2 && d.data[0] === allBitsOn && d.data[1] === allBitsOn, `_remove(): Expecting allBitsOn in both data blocks`);
+
 }
 
 function testToArray() {
@@ -271,11 +306,6 @@ function testToJson() {
     assert(b.toString() === c.toString(), `Test of toJson() and constructor(data) failed.\n${b.toString()}\n${c.toString()}`);
 }
 
-
-const allBitsOnBinary = 0b1111111111111111111111111111111;
-const allBitsOnHex = 0x7fffffff;
-const allBitsOnStr = "1111111111111111111111111111111";
-const tooManyBits = 0x1ffffffff;
 
 function testLength() {
     let b = new BitArray({data: [0xFFFFFF, 0xFFFFFF], length: 6});
@@ -317,6 +347,7 @@ testConstructorNumber();
 testBackward();
 testSlice();
 testInsert();
+testRemove();
 testToArray();
 testToJson();
 testLength();

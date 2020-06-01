@@ -11,9 +11,11 @@ function verifyBoolean(target) {
 
 /* constructor accepts
      new BitArray()
-     new BitArray(number) - this bits from this number will be used to initialize the bitArray
+     new BitArray(number) - the bits from this number will be used to initialize the bitArray.
+                            max value is 31 bits or 2,147,483,647
      new BitArray(string) - a string of 0's and 1's such as "10000101" which will be used
                             to initialize the BitArray.  The bitArray[0] bit is last in the string
+                            (the way that binary numbers are displayed)
      new BitArray(bitArray) - copy all data from a different bitArray
      new BitArray(Array)    - copy all data from a regular array of Booleans
      new BitArray({data: array, length: length}) - data format from bitArray.toArray()
@@ -28,7 +30,7 @@ class BitArray {
     constructor(initial) {
         // create non-enumerable length and data properties
         Object.defineProperty(this, kLenName, {value: 0, writable: true});
-        Object.defineProperty(this, kDataName, {value: [], writable: true})
+        Object.defineProperty(this, kDataName, {value: [], writable: true});
 
         if (typeof initial === "undefined") {
             return;
@@ -87,6 +89,11 @@ class BitArray {
         }
     }
 
+    // The length property may be set or retrieved.  This represents the number of bits in the
+    // BitArray.  If you set it, it will shrink or grow the underlying storage to fit.  New bits
+    // added to the array by setting the length to a longer value will be initialized to false.
+    // This is a logical length value that is separate from the underlying storage, but setting
+    // this logical length value may cause the underlying storage to be expanded or contracted
     get length() {
         return this[kLenName];
     }
@@ -336,16 +343,27 @@ class BitArray {
         return b;
     }
 
-
     // remove bits from the array by copying all the bits after the removed
     // spot down by cnt spaces
     _remove(start, cnt) {
+        const len = this.length;
+        // if start is past the end of cnt is zero, nothing to do
+        if (start >= len || cnt === 0) {
+            return this;
+        }
+        if (cnt < 0) {
+            throw new TypeError('cnt passed to _remove() must not be negative');
+        }
+        // if trying to remove past the end, then just truncate the end,
+        // no copying necessary
+        if (start + cnt > len) {
+            this.length = start;
+            return this;
+        }
         let src = start + cnt;
         let dest = start;
-        const len = this.length;
         while (src < len) {
-            let val = this.get(src);
-            this.set(dest, val);
+            this.set(dest, this.get(src));
             ++src;
             ++dest;
         }
@@ -355,13 +373,14 @@ class BitArray {
     }
 
     // insert bits into the array by moving all the bits after the insertion point up
+    // accepts an array of booleans as the data argument
     _insert(start, cnt, data) {
         if (cnt === 0) return this;
         if (data && !Array.isArray(data)) {
             throw new TypeError(`data passed to _insert() must be a regular array`);
         }
         if (data && data.length < cnt) {
-            throw new RangeError(`data passed to _insert() is not at least cnt  in length`);
+            throw new RangeError(`data passed to _insert() is not at least cnt in length`);
         }
         if (cnt < 0) {
             throw new RangeError(`cnt for _insert() can't be negative`);
@@ -397,46 +416,19 @@ class BitArray {
     // remove bits from the array
     // optionally return the bits in a new bitArray
     splice(start, deleteCount, returnData = false) {
-        if (start < 0) {
-            start = this.length + start;
-        }
-        if (start + deleteCount > this.length) {
-            deleteCount = this.length - start;
-        }
-        if (start < 0 || start >= this.length || deleteCount <= 0) {
-            if (returnData) {
-                // return empty BitArray
-                return speciesCreate(this, BitArray);
-            } else {
-                return;
-            }
-        }
-        let b;
+        let deletedBits;
         if (returnData) {
-            b = speciesCreate(this, BitArray);
+            deletedBits = this.slice(start, start + deleteCount);
         }
-        // copy down bits from above the deleteCount position to start position
-        let src = start + deleteCount;
-        let dest = start;
-        let i = 0;
-        while (src < this.length) {
-            let val = this.get(src);
-            if (b) {
-                b.set(i, val);
-            }
-            this.set(dest, val);
-            ++dest;
-            ++src;
-            ++i;
-        }
-        this.length -= deleteCount;
-        if (b) {
-            return b;
+        this._remove(start, deleteCount);
+        if (returnData) {
+            return deletedBits;
         }
     }
 
     // default forward iterator
     // enables use of "for (let val of bitArray) {...}"
+    // iterates the true/false values
     [Symbol.iterator]() {
         let index = 0;
         return {
@@ -485,6 +477,10 @@ class BitArray {
     // the iterator supplies the indexes of all the desired values
     // the value itself is not returned since, by definition, you asked
     // for all true or all false so you know what the matching value is
+    // for (let val of bitArray.indexes(true)) will iterate the indexes
+    // of all the true values
+    // for (let val of bitArray.indexes(false)) will iterate the indexes
+    // of all the false values
     indexes(target) {
         verifyBoolean(target);
         return {
