@@ -1,4 +1,5 @@
 const { mix, mixStatic, speciesCreate } = require('./utils.js');
+const { BitArray } = require('./bit-array.js');
 
 
 class ArrayEx extends Array {
@@ -199,8 +200,65 @@ class ArrayEx extends Array {
     }
 
     // get an iterator that iterates the whole array in random order
-    // The iterator works on a copy of the array so changes to the array after
-    //   getting the iterator do not affect it
+    // If you modify the array while using this iterator, you will get
+    // indeterminate results
+    randoms() {
+        return {
+            [Symbol.iterator]: () => {
+                // Make a bitArray the same length as our current array
+                // all initialized to false
+                const b = new BitArray();
+                b.length = this.length;
+                let randCntr = 0;
+                let numCntr = 0;
+                let remainingCopy;
+                let remaining = this.length;
+
+                return {
+                    next: () => {
+                        if (this.length === 0 || !remaining || (remainingCopy && remainingCopy.length === 0)) {
+                            return {done: true};
+                        } else {
+                            if (!remainingCopy) {
+                                const maxMisses = Math.max(Math.floor(this.length / 100), 10);
+                                let misses = 0;
+                                let index, val;
+                                do {
+                                    index = Math.floor(Math.random() * this.length);
+                                    val = b.get(index);
+                                    ++misses;
+                                    ++randCntr;
+                                }  while (val && misses < maxMisses);
+                                if (!val) {
+                                    ++numCntr;
+                                    // mark this index as used
+                                    b.set(index, true);
+                                    --remaining;
+                                    return {value: this[index], done: false};
+                                } else {
+                                    console.log(`Array Length ${this.length}, Total nums ${numCntr}, totalRandoms ${randCntr}, remaining hits = ${b.count(false)}`);
+                                    // the idea here is that we will now make a smaller copy of
+                                    // just the remaining indexes that haven't been used yet
+                                    remainingCopy = Array.from(b.indexes(false));
+                                }
+                            }
+
+                            // remainingCopy must be valid here
+                            // get a random index into remainingCopy
+                            let rindex = Math.floor(Math.random() * remainingCopy.length);
+                            // get the main array index that corresponds to that remainingCopy index
+                            let index = remainingCopy[rindex];
+                            --remaining;
+                            remainingCopy.splice(rindex, 1);        // remove index from remainingCopy
+                            return {value: this[index], done: false};
+                        }
+                    }
+                }
+            }
+        }
+    }
+    /*
+    // this implementation is ridiculously slow for large arrays
     randoms() {
         return {
             [Symbol.iterator]: () => {
@@ -221,6 +279,7 @@ class ArrayEx extends Array {
             }
         }
     }
+    */
 
     // create a map with array value as the map key and array index as the map value
     // so you can quickly look up a bunch of values in the array, but still get back
