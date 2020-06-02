@@ -352,6 +352,15 @@ class BitArray {
         return b;
     }
 
+    // get a count of true or false bits
+    count(target) {
+        let cntr = 0;
+        for (let val of this) {
+            if (val === target) ++cntr;
+        }
+        return cntr;
+    }
+
     // remove bits from the array by copying all the bits after the removed
     // spot down by cnt spaces
     _remove(start, cnt) {
