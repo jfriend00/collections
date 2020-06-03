@@ -1,6 +1,19 @@
 const { mix, mixStatic, speciesCreate } = require('./utils.js');
 const { BitArray } = require('./bit-array.js');
+// environment variable that turns debug tracing on
+const debugOn = process.env["DEBUG_ARRAYEX"] === "1";
 
+function DBG(...args) {
+    if (debugOn) {
+        console.log(...args);
+    }
+}
+
+// conditional include the performance measuring code
+let Bench;
+if (debugOn) {
+    Bench = require('../measure').Bench;
+}
 
 class ArrayEx extends Array {
     // run all requests in parallel, resolve to array of results
@@ -207,43 +220,80 @@ class ArrayEx extends Array {
             [Symbol.iterator]: () => {
                 // Make a bitArray the same length as our current array
                 // all initialized to false
+                let bTotal, bBitArray, bRemainingArray;
+                if (debugOn) {
+                    bTotal = new Bench().markBegin();
+                    bBitArray = new Bench().markBegin();
+                    bRemainingArray = new Bench();
+                }
+
                 const b = new BitArray();
                 b.length = this.length;
-                let randCntr = 0;
-                let numCntr = 0;
+                let bitArrayHits = 0;       // number of hits from bitArray
+                let totalGuesses = 0;       // number of times we generated a random number (includes misses)
                 let remainingCopy;
+                let origRemainingCopyLength = 0;
+                let origLength = this.length;
                 let remaining = this.length;
+                const portion = 0.005;         // when to switch over to remainingCopy
+                const maxMisses = Math.max(Math.floor(this.length / 200), 10);
 
                 return {
                     next: () => {
                         if (this.length === 0 || !remaining || (remainingCopy && remainingCopy.length === 0)) {
+                            if (debugOn) {
+                                DBG(`Array Length: ${this.length}, Total bitArray hits: ${bitArrayHits}, Max copy length: ${origRemainingCopyLength}, Total Guesses: ${totalGuesses}`);
+                                bTotal.markEnd();
+                                bBitArray.markEnd();
+                                bRemainingArray.markEnd();
+                                let totalMs = bTotal.ms;
+                                if (totalMs === 0) {
+                                    totalMs = 1;
+                                }
+                                DBG(`Total time: ${bTotal.formatSec(3)}, rate: ${(this.length / totalMs).toFixed(3)} items/ms, bitArray time: ${bBitArray.formatSec(3)}, remainingArray time: ${bRemainingArray.formatSec(3)}`);
+                            }
                             return {done: true};
                         } else {
-                            if (!remainingCopy) {
-                                const maxMisses = Math.max(Math.floor(this.length / 100), 10);
+                            // Performance enhancement idea:
+                            // Instead of putting all remaining items in one array, we could bucketize them
+                            // into several buckets and use two random numbers, one to choose a bucket and one to
+                            // choose an item in the bucket.  Then we remove one from the bucket, we don't have to
+                            // move as many items in the array
+                            if (!remainingCopy && (remaining / origLength > portion)) {
                                 let misses = 0;
                                 let index, val;
                                 do {
                                     index = Math.floor(Math.random() * this.length);
                                     val = b.get(index);
+                                    ++totalGuesses;
                                     ++misses;
-                                    ++randCntr;
                                 }  while (val && misses < maxMisses);
                                 if (!val) {
-                                    ++numCntr;
+                                    ++bitArrayHits;
                                     // mark this index as used
                                     b.set(index, true);
                                     --remaining;
                                     return {value: this[index], done: false};
                                 } else {
-                                    console.log(`Array Length ${this.length}, Total nums ${numCntr}, totalRandoms ${randCntr}, remaining hits = ${b.count(false)}`);
-                                    // the idea here is that we will now make a smaller copy of
-                                    // just the remaining indexes that haven't been used yet
-                                    remainingCopy = Array.from(b.indexes(false));
+                                    DBG(`Hit maxMisses(${maxMisses}) with ${remaining} items left`);
                                 }
+                                // fall through into the code below that works with remainingCopy
                             }
 
-                            // remainingCopy must be valid here
+                            // if we get here, we're done trying to find a false value in the bitArray
+                            // so we're going to just collect all the remaining false indexes from
+                            // the bitArray and put them into an actual array
+                            if (!remainingCopy) {
+                                if (debugOn) {
+                                    bBitArray.markEnd();
+                                    bRemainingArray.markBegin();
+                                    if (remaining / origLength <= portion) {
+                                        DBG(`Hit portion limit(${remaining}) with portion set to ${portion}`);
+                                    }
+                                }
+                                remainingCopy = Array.from(b.indexes(false));
+                                origRemainingCopyLength = remainingCopy.length;
+                            }
                             // get a random index into remainingCopy
                             let rindex = Math.floor(Math.random() * remainingCopy.length);
                             // get the main array index that corresponds to that remainingCopy index

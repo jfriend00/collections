@@ -158,6 +158,7 @@ function testBackwardForward() {
 }
 
 function testRandoms(num) {
+    console.log('----------------------------------------------------------------------------------');
     let p = new ArrayEx();
     const testLen = num;
     for (let i = 0; i < testLen; i++) {
@@ -171,7 +172,7 @@ function testRandoms(num) {
     // this test just makes sure we got every value from the array back, could use a better test to
     // see if we actually got them in a random order
     assert(q.size === p.length, target, `.randoms(): expecting ${p.length} length, got ${q.size}`);
-    console.log('.randoms() iterator works');
+    console.log(`.randoms(${num}) iterator works`);
 }
 
 function testRange() {
