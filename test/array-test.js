@@ -171,7 +171,7 @@ function testRandoms(num) {
     }
     // this test just makes sure we got every value from the array back, could use a better test to
     // see if we actually got them in a random order
-    assert(q.size === p.length, target, `.randoms(): expecting ${p.length} length, got ${q.size}`);
+    assert(q.size === p.length, `.randoms(): expecting ${p.length} length, got ${q.size}`);
     console.log(`.randoms(${num}) iterator works`);
 }
 

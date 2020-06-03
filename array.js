@@ -215,6 +215,7 @@ class ArrayEx extends Array {
     // get an iterator that iterates the whole array in random order
     // If you modify the array while using this iterator, you will get
     // indeterminate results
+    /*
     randoms() {
         return {
             [Symbol.iterator]: () => {
@@ -235,12 +236,13 @@ class ArrayEx extends Array {
                 let origRemainingCopyLength = 0;
                 let origLength = this.length;
                 let remaining = this.length;
-                const portion = 0.005;         // when to switch over to remainingCopy
+                const portion = 0.07;         // when to switch over to remainingCopy
                 const maxMisses = Math.max(Math.floor(this.length / 200), 10);
+                let bucketIterator;
 
                 return {
                     next: () => {
-                        if (this.length === 0 || !remaining || (remainingCopy && remainingCopy.length === 0)) {
+                        if (!remaining || this.length === 0) {
                             if (debugOn) {
                                 DBG(`Array Length: ${this.length}, Total bitArray hits: ${bitArrayHits}, Max copy length: ${origRemainingCopyLength}, Total Guesses: ${totalGuesses}`);
                                 bTotal.markEnd();
@@ -291,38 +293,20 @@ class ArrayEx extends Array {
                                         DBG(`Hit portion limit(${remaining}) with portion set to ${portion}`);
                                     }
                                 }
-                                remainingCopy = Array.from(b.indexes(false));
+                                const itemsPerBucket = 1000;
+                                // remainingCopy = new BucketList(b.indexes(false), Math.floor(remaining / itemsPerBucket), remaining);
+                                remainingCopy = new BucketList(b.indexes(false), 1, remaining);
                                 origRemainingCopyLength = remainingCopy.length;
+                                if (debugOn) {
+                                    if (remaining !== origRemainingCopyLength) {
+                                        DBG(`!!!! remaining !== bucket length, ${remaining} !== ${origRemainingCopyLength}`);
+                                    }
+                                }
+                                remaining = origRemainingCopyLength;
+                                bucketIterator = remainingCopy.randomItems()[Symbol.iterator]();
                             }
-                            // get a random index into remainingCopy
-                            let rindex = Math.floor(Math.random() * remainingCopy.length);
-                            // get the main array index that corresponds to that remainingCopy index
-                            let index = remainingCopy[rindex];
                             --remaining;
-                            remainingCopy.splice(rindex, 1);        // remove index from remainingCopy
-                            return {value: this[index], done: false};
-                        }
-                    }
-                }
-            }
-        }
-    }
-    /*
-    // this implementation is ridiculously slow for large arrays
-    randoms() {
-        return {
-            [Symbol.iterator]: () => {
-                const copy = this.slice();
-                return {
-                    next: () => {
-                        if (copy.length === 0) {
-                            return {done: true};
-                        } else {
-                            const randomIndex = Math.floor(Math.random() * copy.length);
-                            const randomValue = copy[randomIndex];
-                            // now remove this value from the copy
-                            copy.splice(randomIndex, 1);
-                            return {value: randomValue, done: false};
+                            return bucketIterator.next();
                         }
                     }
                 }
@@ -330,6 +314,47 @@ class ArrayEx extends Array {
         }
     }
     */
+    randoms() {
+        return {
+            [Symbol.iterator]: () => {
+                let bTotal;
+                if (debugOn) {
+                    bTotal = new Bench().markBegin();
+                }
+                // these next 4 lines are a lot faster than this.slice()
+                const copy = new Array(this.length);
+                for (let [i, item] of this.entries()) {
+                    copy[i] = item;
+                }
+                let virtualLength = copy.length;
+                return {
+                    next: () => {
+                        if (virtualLength === 0) {
+                            if (debugOn) {
+                                bTotal.markEnd();
+                                let totalMs = bTotal.ms;
+                                if (totalMs === 0) {
+                                    totalMs = 1;
+                                }
+                                DBG(`Total time: ${bTotal.formatSec(3)}, rate: ${(copy.length / totalMs).toFixed(3)} items/ms`);
+                            }
+                            return {done: true};
+                        } else {
+                            // get a random value,
+                            // swap it to the end of the array,
+                            // decrement virtualLength
+                            const randomIndex = Math.floor(Math.random() * virtualLength);
+                            const randomValue = copy[randomIndex];
+                            copy[randomIndex] = copy[virtualLength - 1];
+                            copy[virtualLength - 1] = randomValue;
+                            --virtualLength;
+                            return {value: randomValue, done: false};
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // create a map with array value as the map key and array index as the map value
     // so you can quickly look up a bunch of values in the array, but still get back
