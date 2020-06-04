@@ -159,14 +159,16 @@ function testBackwardForward() {
 
 function testRandoms(num) {
     console.log('----------------------------------------------------------------------------------');
-    let p = new ArrayEx();
+    // we're using a plain array here after discovering that .slice() on ArrayEx is 20x slower
+    // that it is on a plain array
+    let p = []
     const testLen = num;
     for (let i = 0; i < testLen; i++) {
         p.push(i);
     }
 
     let q = new Set();
-    for (let item of p.randoms()) {
+    for (let item of ArrayEx.randoms(p)) {
         q.add(item);
     }
     // this test just makes sure we got every value from the array back, could use a better test to
