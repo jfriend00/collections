@@ -341,6 +341,25 @@ class ArrayEx extends Array {
             For "manaul", it always uses a manual copy
     */
 
+    // this is a weird optimization because calling .slice() on a sub-classed array in V8
+    // is really slow - in fact it's slower than a manual copy of each value in a for loop
+    // So, we see if we're operating on a plain array and if so, use .slice().  If not,
+    // then use our manual copy
+    fastDup() {
+        if (this.constructor === Array) {
+            DBG('Using fastpath .slice() to dup array');
+            return this.slice();
+        } else {
+            DBG('Using manual copy to dup array');
+            let len = this.length;
+            let array = speciesCreate(this, ArrayEx, len);
+            for (let i = 0; i < len; i++) {
+                array[i] = this[i];
+            }
+            return array;
+        }
+    }
+
     randoms(opts = {}) {
         return {
             [Symbol.iterator]: () => {
@@ -360,6 +379,8 @@ class ArrayEx extends Array {
                     copyType: "auto",                   // "slice" | "manual" | "auto"
                 }, opts);
 
+                DBG(JSON.stringify(options));
+
                 if (options.mode === "performance") {
                     options.bitThreshold = this.length;     // don't ever trigger use of BitArray
                 }
@@ -370,7 +391,19 @@ class ArrayEx extends Array {
                     options.copyThreshold = Math.max(options.copyThreshold, 0.05);
                     copyThreshold = Math.round(this.length * options.copyThreshold);
                 } else {
-                    copy = this.slice();
+                    if (options.copyType === "auto") {
+                        copy = ArrayEx.fastDup(this);
+                    } else if (options.copyType === "manual") {
+                        let len = this.length;
+                        copy = speciesCreate(this, ArrayEx, len);
+                        for (let i = 0; i < len; i++) {
+                            copy[i] = this[i];
+                        }
+                    } else if (options.copyType === "slice") {
+                        copy = this.slice();
+                    } else {
+                        throw new Error(`Unknown options.copyType '${options.copyType}'`);
+                    }
                     virtualLength = copy.length;
                 }
 
@@ -384,7 +417,7 @@ class ArrayEx extends Array {
                             bTotal.markBegin();
                         }
 
-                        if (!remaining) {
+                    if (!remaining) {
                             if (debugOn) {
                                 bTotal.markEnd();
                                 const totalMs = Math.max(bTotal.ms, 1);
@@ -417,7 +450,9 @@ class ArrayEx extends Array {
                                     // mark this index as used
                                     bits.set(index, true);
                                     --remaining;
-                                    bTotal.markEnd();
+                                    if (debugOn) {
+                                        bTotal.markEnd();
+                                    }
                                     return {value: this[index], done: false};
                                 }
                             }
@@ -433,7 +468,9 @@ class ArrayEx extends Array {
                         copy[virtualLength - 1] = randomValue;
                         --virtualLength;
                         --remaining;
-                        bTotal.markEnd();
+                        if (debugOn) {
+                            bTotal.markEnd();
+                        }
                         return {value: randomValue, done: false};
                     }
                 }
@@ -486,8 +523,7 @@ ArrayEx.range = function(start, end, step = 1) {
         while (val > end) {
             array.push(val);
             val += step;
-        }
-    } else {
+        }    } else {
         throw new Error('step cannot be zero')
     }
     return array;
