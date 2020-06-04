@@ -314,42 +314,127 @@ class ArrayEx extends Array {
         }
     }
     */
-    randoms() {
+
+    /*
+    Get an iterator that provides items one after another randomly until the whole array has been returned
+    If the array is modified while using this iterator, the results are indeterminate - some values may be
+    missed or repeated.
+
+    options:
+        mode: "balance" | "performance"  (default "balance")
+            "performance" means that a full copy of the array is done, fastest, but a large array will use memory
+            "balance" means that arrays above the bitThreshold in size will use about 5% of a full copy
+                (using a BitArray, then switching to a copy to finish)
+
+        bitThreshold: nnn    (default 1,000)
+            With a size below this value, a copy is used.  At or above this value a BitArray is used first
+
+        copyThreshold: percentage  (default 0.05 which is 5%)
+            If using a BitArray first (based on previous settings), this is the percentage of the array
+            that is left before switching over to a copy
+
+        copyType: "auto", "slice", "manual"
+            If in performance mode or if the array is below bitThreshold, a full copy of the array will be
+            made.  This determines which means of making the copy is used.   For "auto", it uses .slice() if
+            The array is a plain Array (no sub-class) and does a manual copy if a sub-classed Array.
+            For "slice", it always uses .slice()
+            For "manaul", it always uses a manual copy
+    */
+
+    randoms(opts = {}) {
         return {
             [Symbol.iterator]: () => {
-                let bTotal;
+                let bits, bTotal, copy, virtualLength, copyThreshold;
+                let misses = 0;
+                let remaining = this.length;
+                let origLength = this.length;
+
                 if (debugOn) {
                     bTotal = new Bench().markBegin();
                 }
-                // these next 4 lines are a lot faster than this.slice()
-                const copy = new Array(this.length);
-                for (let [i, item] of this.entries()) {
-                    copy[i] = item;
+
+                const options = Object.assign({
+                    mode: "balance",                    // override for all the other options if set to "performance" or "smallMem"
+                    bitThreshold: 1000,                 // size above which it uses the BitArray first
+                    copyThreshold: 0.05,                // percentage remaining to switch out of BitArray (cannot be set below 0.05)
+                    copyType: "auto",                   // "slice" | "manual" | "auto"
+                }, opts);
+
+                if (options.mode === "performance") {
+                    options.bitThreshold = this.length;     // don't ever trigger use of BitArray
                 }
-                let virtualLength = copy.length;
+                if (this.length > options.bitThreshold) {
+                    bits = new BitArray();
+                    bits.length = this.length;                 // initial bitArray to proper length and all false
+                    // options.copyThreshold cannot be less than 0.05
+                    options.copyThreshold = Math.max(options.copyThreshold, 0.05);
+                    copyThreshold = Math.round(this.length * options.copyThreshold);
+                } else {
+                    copy = this.slice();
+                    virtualLength = copy.length;
+                }
+
+                if (debugOn) {
+                    bTotal.markEnd();
+                }
+
                 return {
                     next: () => {
-                        if (virtualLength === 0) {
+                        if (debugOn) {
+                            bTotal.markBegin();
+                        }
+
+                        if (!remaining) {
                             if (debugOn) {
                                 bTotal.markEnd();
-                                let totalMs = bTotal.ms;
-                                if (totalMs === 0) {
-                                    totalMs = 1;
-                                }
-                                DBG(`Total time: ${bTotal.formatSec(3)}, rate: ${(copy.length / totalMs).toFixed(3)} items/ms`);
+                                const totalMs = Math.max(bTotal.ms, 1);
+                                DBG(`Total time: ${bTotal.formatSec(3)}, rate: ${(origLength / totalMs).toFixed(1)} items/ms, misses: ${((misses / origLength) * 100).toFixed(1)}%`);
                             }
                             return {done: true};
-                        } else {
-                            // get a random value,
-                            // swap it to the end of the array,
-                            // decrement virtualLength
-                            const randomIndex = Math.floor(Math.random() * virtualLength);
-                            const randomValue = copy[randomIndex];
-                            copy[randomIndex] = copy[virtualLength - 1];
-                            copy[virtualLength - 1] = randomValue;
-                            --virtualLength;
-                            return {value: randomValue, done: false};
                         }
+
+                        // if bitArray is active, use it
+                        if (bits) {
+                            // if we've reached threshold to copy, then switch over to copy mechanism
+                            if (remaining <= copyThreshold) {
+                                // initialize copy here
+                                copy = Array.from(bits.indexes(false));
+                                virtualLength = copy.length;
+                                bits = null;
+                            } else {
+                                let index, val;
+                                // loop selecting random bitArray items until we find one that is false
+                                // Since this could take forever when the array is nearly all true,
+                                // we never allow less than 5% of the entries to be false in the array
+                                // We switch over to a copy when it gets to 5%
+                                do {
+                                    index = Math.floor(Math.random() * this.length);
+                                    val = bits.get(index);
+                                    ++misses;
+                                }  while (val);
+                                --misses;
+                                if (!val) {
+                                    // mark this index as used
+                                    bits.set(index, true);
+                                    --remaining;
+                                    bTotal.markEnd();
+                                    return {value: this[index], done: false};
+                                }
+                            }
+                        }
+                        // not using bitArray so must be using copy
+
+                        // get a random value,
+                        // swap it to the end of the array,
+                        // decrement virtualLength
+                        const randomIndex = Math.floor(Math.random() * virtualLength);
+                        const randomValue = copy[randomIndex];
+                        copy[randomIndex] = copy[virtualLength - 1];
+                        copy[virtualLength - 1] = randomValue;
+                        --virtualLength;
+                        --remaining;
+                        bTotal.markEnd();
+                        return {value: randomValue, done: false};
                     }
                 }
             }
