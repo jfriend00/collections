@@ -8,6 +8,19 @@ const allBitsOn = 0x7fffffff;
 const allBitsOnStr = "1111111111111111111111111111111";
 const tooManyBits = 0x1ffffffff;
 
+const debugOn = process.env["DEBUG_BITARRAY"] === "1";
+
+function DBG(...args) {
+    if (debugOn) {
+        console.log(...args);
+    }
+}
+
+// conditional include the performance measuring code
+let Bench;
+if (debugOn) {
+    Bench = require('../../measure').Bench;
+}
 
 
 function makeRandomBitArray(testLen = 2000) {
@@ -355,6 +368,19 @@ function testToBooleanArray() {
     }
 }
 
+function testInsertPerformance() {
+    if (!debugOn) return;
+    let b = makeRandomBitArray(10_000_000);
+    let m1 = new Bench().markBegin();
+    b.unshift(true);
+    m1.markEnd();
+
+    let m2 = new Bench().markBegin();
+    b._insert(0, 1, [true]);
+    m2.markEnd();
+    console.log(`unshift: ${m1.formatMs(3)}, _insert: ${m2.formatMs(3)}`);
+}
+
 testPushPop();
 testFill();
 testShifts();
@@ -377,5 +403,6 @@ testToArray();
 testToJson();
 testLength();
 testToBooleanArray();
+testInsertPerformance();
 
 console.log('BitArray tests passed');

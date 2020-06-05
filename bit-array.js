@@ -406,6 +406,9 @@ class BitArray {
 
     // insert bits into the array by moving all the bits after the insertion point up
     // accepts an array of booleans as the data argument
+    // Note to work on in the future, .unshift() is 32x faster than _insert() because _insert() moves
+    // one bit at a time and .unshift() moves 31 bits at a time
+    // So, we should probably rewrite _insert() and _remove() to move 31 bits at a time
     _insert(start, cnt, data) {
         if (cnt === 0) return this;
         if (data && !Array.isArray(data)) {
