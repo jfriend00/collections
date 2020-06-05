@@ -200,6 +200,16 @@ function testConstructorNumber() {
     assert(b.toString() === '1000000000000000000000000000000000000101', `toString() failed to match, got ${b.toString()}`);
 }
 
+// test passing another bit array to the constructor
+function testConstructorBitArray() {
+    let b = makeRandomBitArray();
+    let c = new BitArray(b);
+    assert(b.length === c.length, `testConstructorBitArray() failed, lengths ${b.length} and ${c.length} are not the same`);
+    for (let [i, val] of b.entries()) {
+        assert(c.get(i) === val, `testConstructorBitArray() failed, value at index ${i} not the same`);
+    }
+}
+
 function testBackward() {
     let b = makeRandomBitArray();
     for (let [index, val] of b.backwardEntries()) {
@@ -358,6 +368,7 @@ testForEach();
 testToString();
 testConstructorString();
 testConstructorNumber();
+testConstructorBitArray();
 testBackward();
 testSlice();
 testInsert();
