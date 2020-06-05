@@ -1,6 +1,13 @@
 const { ArrayEx } = require('../array.js');
 const assert = require('assert').strict;
 
+const debugOn = process.env["DEBUG_ARRAYEX"] === "1";
+function DBG(...args) {
+    if (debugOn) {
+        console.log(...args);
+    }
+}
+
 function testShuffle(numIterations) {
     let a = new ArrayEx(0,1,2,3,4,5,6,7,8,9);
     let len = a.length;
@@ -158,7 +165,7 @@ function testBackwardForward() {
 }
 
 function testRandoms(num, options = {}) {
-    console.log('----------------------------------------------------------------------------------');
+    DBG('----------------------------------------------------------------------------------');
     // we're using a plain array here after discovering that .slice() on ArrayEx is 20x slower
     // that it is on a plain array
     const testLen = num;
@@ -222,24 +229,27 @@ testRandoms(10);
 testRandoms(100);
 testRandoms(10_000);
 testRandoms(100_000);
-testRandoms(10_000_000);
-console.log("==================================================================================");
+DBG("==================================================================================");
 testRandoms(2, {mode: "performance"});
 testRandoms(10, {mode: "performance"});
 testRandoms(100, {mode: "performance"});
 testRandoms(100_000, {mode: "performance"});
 testRandoms(10_000, {mode: "performance"});
-testRandoms(10_000_000, {mode: "performance"});
-console.log("==================================================================================");
+DBG("==================================================================================");
 testRandoms(10_000, {mode: "performance", copyType: "auto"});
 testRandoms(10_000, {mode: "performance", copyType: "manual"});
 testRandoms(10_000, {mode: "performance", copyType: "slice"});
-console.log("==================================================================================");
+DBG("==================================================================================");
 testRandoms(10_000, {mode: "performance", copyType: "auto", useArrayEx: true});
 testRandoms(10_000, {mode: "performance", copyType: "manual", useArrayEx: true});
 testRandoms(10_000, {mode: "performance", copyType: "slice", useArrayEx: true});
-console.log("==================================================================================");
+DBG("==================================================================================");
 testRandoms(100_000, {mode: "balance", bitThreshold: 200_000});
 testRandoms(100_000, {mode: "balance", bitThreshold: 1_000});
+DBG("==================================================================================");
+testRandoms(10_000_000, {mode: "performance"});
+testRandoms(10_000_000, {mode: "balance"});
+testRandoms(10_000_000, {mode: "balance", copyThreshold: 0.1});
+
 testRange();
 testCreateMapByIndex();

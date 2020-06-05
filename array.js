@@ -351,7 +351,7 @@ class ArrayEx extends Array {
             return this.slice();
         } else {
             DBG('Using manual copy to dup array');
-            let len = this.length;
+            const len = this.length;
             let array = speciesCreate(this, ArrayEx, len);
             for (let i = 0; i < len; i++) {
                 array[i] = this[i];
@@ -394,7 +394,7 @@ class ArrayEx extends Array {
                     if (options.copyType === "auto") {
                         copy = ArrayEx.fastDup(this);
                     } else if (options.copyType === "manual") {
-                        let len = this.length;
+                        const len = this.length;
                         copy = speciesCreate(this, ArrayEx, len);
                         for (let i = 0; i < len; i++) {
                             copy[i] = this[i];

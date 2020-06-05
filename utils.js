@@ -24,12 +24,12 @@ function callWithObj(fn) {
     }
 }
 
-// copy own properteis from source to target, but make them
+// copy own properties from source to target, but make them
 // static properties that take the object as the first argument
 function mixStatic(target, source) {
     let descriptors = Object.getOwnPropertyDescriptors(source);
     for (let prop in descriptors) {
-        if (!target[prop] && typeof descriptors[prop].value === "function") {
+        if (prop !== "constructor" && !target[prop] && typeof descriptors[prop].value === "function") {
             let propertyObj = descriptors[prop];
             let fn = propertyObj.value;
             propertyObj.value = callWithObj(fn);
@@ -44,9 +44,11 @@ function mixStatic(target, source) {
 // See https://stackoverflow.com/questions/62010217/how-to-create-a-new-object-of-same-class-as-current-object-from-within-a-method#62010482 for details
 
 // no real way to see if it's a real constructor from plain JS other than these two checks
+//   unless you use new to execute it and use try/catch to catch errors
 function isConstructor(f) {
     return typeof f === "function" && !!f.prototype;
 }
+
 function speciesCreate(originalObject, fallbackConstructor, ...args) {
     const {constructor} = originalObject;
     if (constructor) {
