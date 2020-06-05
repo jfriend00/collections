@@ -21,7 +21,7 @@ function verifyBoolean(target) {
      new BitArray({data: array, length: length}) - data format from bitArray.toArray()
 */
 
-// secret property names used for our internal length and data variables to
+// semi-secret property names used for our internal length and data variables to
 // keep people from accidentally messing with them
 const kLenName = Symbol('length');
 const kDataName = Symbol('data');
@@ -97,6 +97,7 @@ class BitArray {
     get length() {
         return this[kLenName];
     }
+
     set length(len) {
         // update internal length
         this[kLenName] = len;
@@ -120,6 +121,7 @@ class BitArray {
             }
         }
     }
+
     // calculate bit position
     // returns {i, bit, mask}
     // i is which actual array block the bit is in
@@ -131,6 +133,7 @@ class BitArray {
         let mask = 1 << bit;
         return {i, bit, mask};
     }
+
     // get bit value from an index, returns boolean
     get(index) {
         if (index > this.length || index < 0) {
@@ -139,6 +142,7 @@ class BitArray {
         const {i, mask} = this.getPos(index);
         return !!(this[kDataName][i] & mask);
     }
+
     // Set bit value by index
     // The bitArray is automatically grown to fit and any intervening values are
     // initialized to false.  This implementation is not sparse.  Uninitialized values will be
@@ -169,10 +173,12 @@ class BitArray {
             this[kLenName] = index;
         }
     }
-
     // fill bitArray or range of bitArray with true/false
     // will grow the array as needed
     // returns bitArray to allow chaining
+    // Note: If you just want to grow the array and have it initialized to false, you can just
+    // set the .length property as this will initalize any new bits to false automatically
+    // and it's a lot more efficient
     fill(value, start = 0, end = this.length) {
         if (start < 0 || start > end) {
             throw new RangeError('for bitArray.fill(value, start, end) start must be positive and less than or equal to end');
@@ -248,7 +254,7 @@ class BitArray {
         return val;
     }
 
-    // find first index that has target value
+    // find first index that has target value, optionally starting at an index
     indexOf(target, fromIndex = 0) {
         verifyBoolean(target);
         for (let i = fromIndex; i < this.length; i++) {
@@ -288,7 +294,7 @@ class BitArray {
     // 31 bits of unsigned work, even though there are 53 bits available
     // in Number.MAX_SAFE_INTEGER.
     //
-    // Note: The constructor will accept this object when creating a BitArray.
+    // Note: The bitArray constructor will accept this object when creating a BitArray.
     toArray() {
         return {data: this[kDataName].slice(), length: this.length};
     }
@@ -340,7 +346,7 @@ class BitArray {
         }
         // optimization for a full copy
         if (begin === 0 && end === this.length) {
-            speciesCreate(this, BitArray, this);       // return full copy
+            return speciesCreate(this, BitArray, this);       // return full copy
         }
         let b = speciesCreate(this, BitArray);         // create empty bitArray that we will populate
         // set size of new BitArray

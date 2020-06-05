@@ -445,16 +445,18 @@ class ArrayEx extends Array {
                                     val = bits.get(index);
                                     ++misses;
                                 }  while (val);
+
+                                // last one wasn't a miss so reverse that count
                                 --misses;
-                                if (!val) {
-                                    // mark this index as used
-                                    bits.set(index, true);
-                                    --remaining;
-                                    if (debugOn) {
-                                        bTotal.markEnd();
-                                    }
-                                    return {value: this[index], done: false};
+
+                                // mark this index as used in the bitArray
+                                bits.set(index, true);
+
+                                --remaining;
+                                if (debugOn) {
+                                    bTotal.markEnd();
                                 }
+                                return {value: this[index], done: false};
                             }
                         }
                         // not using bitArray so must be using copy
