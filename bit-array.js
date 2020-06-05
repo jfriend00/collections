@@ -4,7 +4,7 @@ const allBitsOn = 0b1111111111111111111111111111111;
 const highUsableBit = 1 << (bitsPerUnit - 1);
 
 function verifyBoolean(target) {
-    if (!(target === true || target === false)) {
+    if (typeof target !== "boolean") {
         throw new TypeError('bitArray.indexes(boolean) must be passed a boolean');
     }
 }
@@ -56,8 +56,16 @@ class BitArray {
                 }
                 ++index;
             }
-        } else if (typeof initial === "object" && initial instanceof BitArray) {
-            // clone a different BitArray
+        } else if (Array.isArray(initial)) {
+            // array of booleans
+            this._insert(0, initial.length, initial);
+        } else if (typeof initial === "object" &&
+                   typeof initial.length === "number" &&
+                   typeof initial.indexes === "function") {
+            // At this point, it appears to be a bitArray-like object and has the minimum number of
+            //   properties to clone it
+            // If we have access to the internal data (via our semi-private properties), then
+            //   use those as a shortcut for cloning
             if (initial[kDataName]) {
                 this[kDataName] = initial[kDataName].slice();
                 this[kLenName] = initial.length;
@@ -65,12 +73,12 @@ class BitArray {
                 // if other BitArray was somehow loaded separately and thus has different symbols,
                 // copy it the slow way bit by bit because we can't get direct access to the data
                 this.length = initial.length;
-                for (let [index, bit] of initial.entries()) {
-                    this.set(index, bit);
+                // since all bits are initialized to false in the new bitArray,
+                // we only need to "set" the true ones (saving time on calculations)
+                for (let i of initial.indexes(true)) {
+                    this.set(i, true);
                 }
             }
-        } else if (Array.isArray(initial)) {
-            this._insert(0, initial.length, initial);
         } else if (typeof initial === "object" &&
                    Array.isArray(initial.data) &&
                    Number.isInteger(initial.length) &&
