@@ -11,6 +11,14 @@ function verifyBoolean(target) {
     }
 }
 
+function isBitArrayLike(obj) {
+    return obj && (obj instanceof BitArray || (
+        typeof obj === "object" &&
+        typeof obj.length === "number" &&
+        typeof obj.indexes === "function"
+    ));
+}
+
 /* constructor accepts
      new BitArray()
      new BitArray(number) - the bits from this number will be used to initialize the bitArray.
@@ -61,9 +69,7 @@ class BitArray {
         } else if (Array.isArray(initial)) {
             // array of booleans
             this._insert(0, initial.length, initial);
-        } else if (typeof initial === "object" &&
-                   typeof initial.length === "number" &&
-                   typeof initial.indexes === "function") {
+        } else if (isBitArrayLike(initial)) {
             // At this point, it appears to be a bitArray-like object and has the minimum number of
             //   properties to clone it
             // If we have access to the internal data (via our semi-private properties), then
@@ -382,18 +388,24 @@ class BitArray {
 
     // insert bits into the array by moving all the bits after the insertion point up
     // accepts an array of booleans as the data argument
-
-    _insert(start, cnt, insertData = null) {
+    // insertData can be null, an Array of Booleans or another BitArray
+    // insertIndex is the index in insertData to start inserting from
+    _insert(start, cnt, insertData = null, insertIndex = 0) {
         if (cnt === 0) return this;
         if (start < 0) {
             throw new RangeError(`start passed to _insert() must not be negative`);
         }
+        if (insertIndex < 0) {
+            throw new RangeError(`insertIndex passed to _insert() must not be negative`);
+        }
+        let isInsertBitArray = false;
         if (insertData) {
-            if (!Array.isArray(insertData)) {
-                throw new TypeError(`data passed to _insert() must be a regular array`);
+            isInsertBitArray = isBitArrayLike(insertData);
+            if (!Array.isArray(insertData) && !isInsertBitArray) {
+                throw new TypeError(`data passed to _insert() must be a regular array or a BitArray`);
             }
-            if (insertData.length < cnt) {
-                throw new RangeError(`data passed to _insert() is not at least cnt in length`);
+            if (insertData.length - insertIndex < cnt) {
+                throw new RangeError(`data passed to _insert() is not at least cnt + insertIndex in length`);
             }
         }
         if (cnt < 0) {
@@ -422,7 +434,7 @@ class BitArray {
         const lostBitMask = (allBitsOn >>> clearShift) << clearShift;      // ugly, but effective
         const lostBitClearMask = ~lostBitMask & signBitMask;
 
-        let lowBits, val, lostBits, priorLostBits = 0;
+        let lowBits, val, lostBits;
 
         // We will copy the later bits that have to be moved first so we don't clobber
         // things as we move stuff, starting at the end of the original data and copying it up
@@ -471,7 +483,12 @@ class BitArray {
         if (insertData) {
             let newVal;
             for (let i = 0; i < cnt; i++) {
-                newVal = insertData[i];
+                if (isInsertBitArray) {
+                    newVal = insertData.get(i + insertIndex);
+                } else {
+                    // must be regular array
+                    newVal = insertData[i + insertIndex];
+                }
                 if (newVal) {
                     // only need to set an inserted Value if it's truthy
                     // as inserted bits are already initialized to false
