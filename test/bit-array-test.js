@@ -370,24 +370,19 @@ function testToBooleanArray() {
 
 function testInsertPerformance() {
     if (!debugOn) return;
-    let a = makeRandomBitArray(10_000_000);
-    let b;
+    let r = makeRandomBitArray(10_000_000);
 
-    b = new BitArray(a);
+    let a = new BitArray(r);
     let m1 = new Bench().markBegin();
-    b.unshift(true);
+    a.unshift(true);
     m1.markEnd();
 
-    b = new BitArray(a);
+    let c = new BitArray(r);
     let m2 = new Bench().markBegin();
-    b._insert(0, 1, [true]);
+    c._insert(0, 1, [true]);
     m2.markEnd();
 
-    b = new BitArray(a);
-    let m3 = new Bench().markBegin();
-    b._insert_new(0, 1, [true]);
-    m3.markEnd();
-    console.log(`unshift: ${m1.formatMs(3)}, _insert: ${m2.formatMs(3)}, _insert_new: ${m3.formatMs(3)}`);
+    console.log(`unshift: ${m1.formatMs(3)}, _insert: ${m2.formatMs(3)}`);
 }
 
 
@@ -404,22 +399,35 @@ function testNewInsert() {
         [0b11, 1, 64, null, "100000000000000000000000000000000000000000000000000000000000000001", "insert 64 bits in second position"],
     ];
 
-    function makeTests() {
-        let len = 100;
-        let srcArray = new Array(len);
-        for (let i = 0; i < len; i++) {
-            srcArray[i] = i % 2;        // make alternating array
+    function makeTests(pattern = "evens", len = 100) {
+        const srcArray = new Array(len);
+        if (pattern === "evens") {
+            for (let i = 0; i < len; i++) {
+                srcArray[i] = i % 2;              // make alternating array
+            }
+        } else if (pattern === "odds") {
+            for (let i = 0; i < len; i++) {
+                srcArray[i] = (i + 1) % 2;        // make alternating array
+            }
+        } else if (pattern === "ones") {
+            srcArray.fill(1);
+        } else if (pattern === "zeroes") {
+            srcArray.fill(0);
         }
         // try all possible insertion points
         for (let start = 0; start < len; ++start) {
             // try a range of different insertion lengths
             for (let cnt = 1; cnt < 66; ++cnt) {
                 // create expected output array
-                let expectedResult = srcArray.slice();
-                let adds = new Array(cnt);
-                adds.fill(0);
+                const expectedResult = srcArray.slice();
+                const adds = new Array(cnt);
+                if (pattern === "evens" || pattern === "zeroes") {
+                    adds.fill(0);
+                } else {
+                    adds.fill(1);
+                }
                 expectedResult.splice(start, 0, ...adds);
-                let item = [
+                const item = [
                     srcArray.slice().reverse().join(""),
                     start,
                     cnt,
@@ -437,11 +445,14 @@ function testNewInsert() {
         }
     }
 
-    makeTests();
+    makeTests("evens", (31*3) - 1);
+    makeTests("odds", 31*3);
+    makeTests("ones", (31*3) + 1);
+    makeTests("zeroes", 100);
 
     function runInsertTest([cArg, index, cnt, values, expectedResult, name]) {
         let b = new BitArray(cArg);
-        b._insert_new(index, cnt, values);
+        b._insert(index, cnt, values);
         if (typeof expectedResult === "string") {
             let str = b.toString();
             if (str !== expectedResult) {
@@ -457,7 +468,7 @@ function testNewInsert() {
     }
 }
 
-/*
+
 testPushPop();
 testFill();
 testShifts();
@@ -481,8 +492,6 @@ testToJson();
 testLength();
 testToBooleanArray();
 testInsertPerformance();
-*/
 testNewInsert();
-//testInsertPerformance();
 
 console.log('BitArray tests passed');
