@@ -370,17 +370,94 @@ function testToBooleanArray() {
 
 function testInsertPerformance() {
     if (!debugOn) return;
-    let b = makeRandomBitArray(10_000_000);
+    let a = makeRandomBitArray(10_000_000);
+    let b;
+
+    b = new BitArray(a);
     let m1 = new Bench().markBegin();
     b.unshift(true);
     m1.markEnd();
 
+    b = new BitArray(a);
     let m2 = new Bench().markBegin();
     b._insert(0, 1, [true]);
     m2.markEnd();
-    console.log(`unshift: ${m1.formatMs(3)}, _insert: ${m2.formatMs(3)}`);
+
+    b = new BitArray(a);
+    let m3 = new Bench().markBegin();
+    b._insert_new(0, 1, [true]);
+    m3.markEnd();
+    console.log(`unshift: ${m1.formatMs(3)}, _insert: ${m2.formatMs(3)}, _insert_new: ${m3.formatMs(3)}`);
 }
 
+
+function testNewInsert() {
+    let table = [
+        // [bitArray constructor arg, insertStart, insertCnt, insertData, expectedResult, name]
+        [0b1, 0, 1, null, "10", "insert single bit in lowest position"],
+        [0b11, 1, 1, null, "101", "insert single bit in second position"],
+        [0b11, 1, 2, null, "1001", "insert two bits in second position"],
+        [allBitsOnBinary, 1, 1, null, "11111111111111111111111111111101", "insert bit in second position with overflow to next block"],
+        [0b11, 1, 62, null, "1000000000000000000000000000000000000000000000000000000000000001", "insert 62 bits in second position"],
+        [0b11, 1, 63, null, "10000000000000000000000000000000000000000000000000000000000000001", "insert 63 bits in second position"],
+        [0b11, 1, 64, null, "100000000000000000000000000000000000000000000000000000000000000001", "insert 64 bits in second position"],
+        [0b11, 1, 64, null, "100000000000000000000000000000000000000000000000000000000000000001", "insert 64 bits in second position"],
+    ];
+
+    function makeTests() {
+        let len = 100;
+        let srcArray = new Array(len);
+        for (let i = 0; i < len; i++) {
+            srcArray[i] = i % 2;        // make alternating array
+        }
+        // try all possible insertion points
+        for (let start = 0; start < len; ++start) {
+            // try a range of different insertion lengths
+            for (let cnt = 1; cnt < 66; ++cnt) {
+                // create expected output array
+                let expectedResult = srcArray.slice();
+                let adds = new Array(cnt);
+                adds.fill(0);
+                expectedResult.splice(start, 0, ...adds);
+                let item = [
+                    srcArray.slice().reverse().join(""),
+                    start,
+                    cnt,
+                    adds,
+                    expectedResult.reverse().join(""),
+                    `At position ${start}, insert ${cnt}`
+                ];
+                // put this specific test first so we can debug it easier
+                if (false && start === 2 && cnt === 30) {
+                    table.unshift(item);
+                } else {
+                    table.push(item);
+                }
+            }
+        }
+    }
+
+    makeTests();
+
+    function runInsertTest([cArg, index, cnt, values, expectedResult, name]) {
+        let b = new BitArray(cArg);
+        b._insert_new(index, cnt, values);
+        if (typeof expectedResult === "string") {
+            let str = b.toString();
+            if (str !== expectedResult) {
+                console.log(`${name} failed, expecting \n${expectedResult}, got \n${str}`);
+                console.log(`index ${index}, cnt ${cnt}`);
+                assert.fail();
+            }
+        }
+    }
+
+    for (let item of table) {
+        runInsertTest(item);
+    }
+}
+
+/*
 testPushPop();
 testFill();
 testShifts();
@@ -404,5 +481,8 @@ testToJson();
 testLength();
 testToBooleanArray();
 testInsertPerformance();
+*/
+testNewInsert();
+//testInsertPerformance();
 
 console.log('BitArray tests passed');

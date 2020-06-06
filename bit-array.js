@@ -1,7 +1,9 @@
 const { speciesCreate } = require('./utils.js');
 const bitsPerUnit = 31;
 const allBitsOn = 0b1111111111111111111111111111111;
-const highUsableBit = 1 << (bitsPerUnit - 1);
+// const highUsableBit = 1 << (bitsPerUnit - 1);
+const highBitMask = 1 << (bitsPerUnit - 1);         // used for isolating high bit
+const signBitMask = ~(1 << bitsPerUnit);            // used for clearing sign bit after <<
 
 function verifyBoolean(target) {
     if (typeof target !== "boolean") {
@@ -216,8 +218,6 @@ class BitArray {
         ++this.length;
 
         const data = this[kDataName];
-        const highBitMask = 1 << (bitsPerUnit - 1);
-        const signBitMask = ~(1 << bitsPerUnit);
         let highBit, prevHighBit, newData;
         for (let i = 0; i < data.length; i++) {
             highBit = data[i] & highBitMask;            // isolate high bit
@@ -446,6 +446,147 @@ class BitArray {
             --dest;
         }
         return this;
+    }
+
+    _insert_new(start, cnt, initData) {
+        if (cnt === 0) return this;
+        if (initData && !Array.isArray(initData)) {
+            throw new TypeError(`data passed to _insert() must be a regular array`);
+        }
+        if (initData && initData.length < cnt) {
+            throw new RangeError(`data passed to _insert() is not at least cnt in length`);
+        }
+        if (cnt < 0) {
+            throw new RangeError(`cnt for _insert() can't be negative`);
+        }
+        if (start > this.length) {
+            throw new RangeError(`start for _insert() is beyond end of the array`);
+        }
+        // grow the array to fit the new bits
+        this.length += cnt;
+
+        // starting at the end of the array - cnt, copy from there to the end of the array
+        // decrementing src and target as we go
+        let deltaIndex = Math.floor(cnt / bitsPerUnit);
+        let deltaBits = cnt % bitsPerUnit;
+
+        const {i: startBlock, bit, mask} = this.getPos(start);
+        const data = this[kDataName];
+
+        // lowBits are the bits in the first block that shouldn't get shifted
+        const lowBitMask = mask - 1;                                // bits below the mask bit
+        const lowBitClearMask = ~lowBitMask & signBitMask;          // how to clear lowBits
+
+        // lostBits are the bits that will get shift out
+        const clearShift = bitsPerUnit - deltaBits;
+        const lostBitMask = (allBitsOn >>> clearShift) << clearShift;      // ugly, but effective
+        const lostBitClearMask = ~lostBitMask & signBitMask;
+
+        let lowBits, val, lostBits, priorLostBits = 0;
+
+        // when deltaIndex === 0, we can just shift bits and move overflow up
+        // so we handle this as a special case
+        if (false && deltaIndex === 0) {
+            // iterate through each block
+            for (let i = startBlock; i < data.length; i++) {
+                val = data[i];                             // what we're starting with
+                lostBits = val & lostBitMask;              // bits we will lose when shifting
+                if (i === startBlock) {
+                    // special case on first block because we have to mask out bits we aren't moving
+                    // and clear bits that should be left vacant
+                    lowBits = val & lowBitMask;
+
+                    // mask out any lost bits that are below the insertion point
+                    // because those will be preserved in the current block, not lost
+                    lostBits &= lowBitClearMask;
+
+                    // clear all low bits out so we don't shift any of them into our vacated bit positions
+                    val = val & lowBitClearMask;
+
+                    // shift the upper bits
+                    val = (val << deltaBits) & signBitMask;
+
+                    // put low bits back where they were
+                    val = (val & lowBitClearMask) | lowBits;
+                } else {
+                    val = (val << deltaBits) & signBitMask;
+                }
+                // put prior iteration's lost bits back into the lowBits of this value
+                // those bits have to be shifted from their high bit location down to the lowest bits
+                val = val | (priorLostBits >>> (bitsPerUnit - deltaBits));
+                data[i] = val;
+                priorLostBits = lostBits;                       // save this for the next iteration
+                // 100|0,0000000000,0000000000,0000000010 - expected
+                // 101|0,0000000000,0000000000,0000000010 - got
+            }
+        } else {
+            // deltaIndex > 0 so we're copying bits from one block to another
+            // we will copy the later bits that have to be moved first so we don't clobber
+            // things as we move stuff
+
+            let destBlock = data.length - 1;        // last block
+            let srcBlock = destBlock - deltaIndex;  // block to copy from
+
+            while (srcBlock >= startBlock) {
+                val = data[srcBlock];                   // what we're starting with
+                data[srcBlock] = 0;                     // clear the src block so the inserted space is zeroed
+                lostBits = val & lostBitMask;           // bits we will lose when shifting
+                if (srcBlock === startBlock) {
+                    // special case on first block because we have to mask out bits we aren't moving
+                    // and clear bits that should be left vacant
+                    lowBits = val & lowBitMask;
+
+                    // mask out any lost bits that are below the insertion point
+                    // because those will be preserved in the current block, not lost
+                    lostBits = lostBits & lowBitClearMask;
+
+                    // clear all low bits out so we don't shift any of them into our vacated bit positions
+                    val = val & lowBitClearMask;
+
+                    // shift the upper bits
+                    val = (val << deltaBits) & signBitMask;
+
+                    // put the modified bits back into the appropriate blocks
+                    data[destBlock] = val;
+                    data[srcBlock] |= lowBits;
+                } else {
+                    val = (val << deltaBits) & signBitMask;
+                    data[destBlock] = val;
+                }
+                if (lostBits) {
+                    // put the lostBits back into the higher block we shifted already
+                    // by the way all this works, lostBits will be zero when destBlock is the last block
+                    // so we won't ever go off the end
+                    data[destBlock + 1] |= (lostBits >>> (bitsPerUnit - deltaBits));
+                }
+                --srcBlock;
+                --destBlock;
+            }
+        }
+
+        /*
+        if we're inserting 1 bit
+            deltaBits === 1
+            deltaIndex === 0
+
+
+        if we're inserting 2 bits
+            deltaBits === 2
+            deltaIndex === 0
+
+        if we're inserting 32 bits
+            deltaBits === 1
+            deltaIndex === 1
+
+        if we're inserting 64 bits
+            deltaBits === 2
+            deltaIndex === 2
+
+
+
+        */
+
+
     }
 
     // remove bits from the array
