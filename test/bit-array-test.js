@@ -389,6 +389,8 @@ function testInsertPerformance() {
 function testNewInsert() {
     let table = [
         // [bitArray constructor arg, insertStart, insertCnt, insertData, expectedResult, name]
+        [0b10, 0, 1, new BitArray("1"), "101", "insert single bit in lowest position from BitArray"],
+        [0b10, 1, 1, new BitArray("1"), "110", "insert single bit in second position from BitArray"],
         [0b1, 0, 1, null, "10", "insert single bit in lowest position"],
         [0b11, 1, 1, null, "101", "insert single bit in second position"],
         [0b11, 1, 2, null, "1001", "insert two bits in second position"],

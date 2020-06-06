@@ -484,6 +484,8 @@ class BitArray {
             let newVal;
             for (let i = 0; i < cnt; i++) {
                 if (isInsertBitArray) {
+                    // there is a performance improvement opportunity to do bulk copying
+                    // between bitArrays if they are byte aligned
                     newVal = insertData.get(i + insertIndex);
                 } else {
                     // must be regular array
