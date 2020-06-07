@@ -385,6 +385,28 @@ function testInsertPerformance() {
     console.log(`unshift: ${m1.formatMs(3)}, _insert: ${m2.formatMs(3)}`);
 }
 
+function testRemovePerformance() {
+    if (!debugOn) return;
+    let r = makeRandomBitArray(10_000_000);
+
+    let a = new BitArray(r);
+    let m1 = new Bench().markBegin();
+    a.shift();
+    m1.markEnd();
+
+    let b = new BitArray(r);
+    let m3 = new Bench().markBegin();
+    b._remove(0,1);
+    m3.markEnd();
+
+    let c = new BitArray(r);
+    let m2 = new Bench().markBegin();
+    c._insert(0, 1, [true]);
+    m2.markEnd();
+
+    console.log(`shift: ${m1.formatMs(3)}, _remove: ${m3.formatMs(3)}, _remove_new ${m2.formatMs(3)}`);
+}
+
 
 function testNewInsert() {
     let table = [
@@ -470,6 +492,84 @@ function testNewInsert() {
     }
 }
 
+function testNewRemove(specificTestToRun = -1) {
+    // [bitArray constructor arg, removeStart, removeCnt, expectedResult, name]
+    const table = [
+        ["1010101", 0, 1, "101010", "remove first bit"],
+        ["1010101", 1, 1, "101011", "remove second bit"],
+        ["1010101", 6, 1, "010101", "remove top bit"],
+        ["0101010101010101010101010101010", 0, 1, "010101010101010101010101010101", "remove first bit of 31"],
+        ["0101010101010101010101010101010", 30, 1, "101010101010101010101010101010", "remove last bit of 31"],
+        ["1010101010101010101010101010101010101010", 0, 1, "101010101010101010101010101010101010101", "remove first bit of 40"], // 40 bits long
+        ["1010101010101010101010101010101010101010", 1, 1, "101010101010101010101010101010101010100", "remove second bit of 40"], // 40 bits long
+    ];
+
+    function makeTests(pattern = "evens", len = 100) {
+        const srcArray = new Array(len);
+        if (pattern === "evens") {
+            for (let i = 0; i < len; i++) {
+                srcArray[i] = i % 2;              // make alternating array
+            }
+        } else if (pattern === "odds") {
+            for (let i = 0; i < len; i++) {
+                srcArray[i] = (i + 1) % 2;        // make alternating array
+            }
+        } else if (pattern === "ones") {
+            srcArray.fill(1);
+        } else if (pattern === "zeroes") {
+            srcArray.fill(0);
+        }
+        // try all possible remove points
+        for (let start = 0; start < len; ++start) {
+            // try a range of different remove lengths
+            for (let cnt = 1; cnt < 66; ++cnt) {
+                // create expected output array
+                const expectedResult = srcArray.slice();
+                expectedResult.splice(start, cnt);
+                const item = [
+                    srcArray.slice().reverse().join(""),
+                    start,
+                    cnt,
+                    expectedResult.reverse().join(""),
+                    `At position ${start}, remove ${cnt}`
+                ];
+                // put this specific test first so we can debug it easier
+                if (false && start === 2 && cnt === 30) {
+                    table.unshift(item);
+                } else {
+                    table.push(item);
+                }
+            }
+        }
+    }
+
+    makeTests("evens", (31*3) - 1);
+    makeTests("odds", 31*3);
+    makeTests("ones", (31*3) + 1);
+    makeTests("zeroes", 100);
+
+    function runRemoveTest([cArg, index, cnt, expectedResult, name]) {
+        let b = new BitArray(cArg);
+        b._remove_new(index, cnt);
+        if (typeof expectedResult === "string") {
+            let str = b.toString();
+            if (str !== expectedResult) {
+                console.log(`${name} failed, expecting \n${expectedResult}, got \n${str}`);
+                console.log(`index ${index}, cnt ${cnt}`);
+                assert.fail();
+            }
+        }
+    }
+
+    if (specificTestToRun >= 0) {
+        runRemoveTest(table[specificTestToRun]);
+    } else {
+        for (let item of table) {
+            runRemoveTest(item);
+        }
+    }
+}
+
 
 testPushPop();
 testFill();
@@ -493,7 +593,10 @@ testToArray();
 testToJson();
 testLength();
 testToBooleanArray();
-testInsertPerformance();
 testNewInsert();
+testInsertPerformance();
+
+testNewRemove();
+testRemovePerformance();
 
 console.log('BitArray tests passed');

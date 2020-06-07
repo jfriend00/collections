@@ -15,8 +15,7 @@ function isBitArrayLike(obj) {
     return obj && (obj instanceof BitArray || (
         typeof obj === "object" &&
         typeof obj.length === "number" &&
-        typeof obj.indexes === "function"
-    ));
+        typeof obj.indexes === "function"));
 }
 
 /* constructor accepts
@@ -228,9 +227,8 @@ class BitArray {
             return undefined;
         }
         const val = this.get(0);
-        const highBitMask = 1 << (bitsPerUnit - 1);
         // now we have to move every block down by one bit
-        let data = this[kDataName];
+        const data = this[kDataName];
         let lowBit;
         for (let i = 0; i < data.length; i++) {
             lowBit = data[i] & 1;           // save lowBit
@@ -368,6 +366,9 @@ class BitArray {
         if (cnt < 0) {
             throw new TypeError('cnt passed to _remove() must not be negative');
         }
+        if (start < 0) {
+            throw new RangeError(`start passed to _remove() must not be negative`);
+        }
         // if trying to remove past the end, then just truncate the end,
         // no copying necessary
         if (start + cnt > len) {
@@ -386,10 +387,120 @@ class BitArray {
         return this;
     }
 
+    _remove_new(start, cnt) {
+        const len = this.length;
+        // if start is past the end of cnt is zero, nothing to do
+        if (start >= len || cnt === 0) {
+            return this;
+        }
+        if (cnt < 0) {
+            throw new TypeError('cnt passed to _remove() must not be negative');
+        }
+        if (start < 0) {
+            throw new RangeError(`start passed to _remove() must not be negative`);
+        }
+        // if the block they are trying to remove extends past the end,
+        // then there we can just truncate the bitArray, no copying is necessary
+        if (start + cnt > len) {
+            this.length = start;
+            return this;
+        }
+
+        // For a remove, we start at the initial point of the deletion and
+        // copy bits down into the deleted space until we get to the end
+        // of the data
+
+        // step 1, move start up to a block boundary so we are copying into
+        // a full block
+        let bitsLeftInBlock = bitsPerUnit - (start % bitsPerUnit);
+        let srcIndex = start + cnt;
+        let destIndex = start;
+        for (let i = 0; i < bitsLeftInBlock; i++) {
+            // if we hit the end of the bitArray, then we're done
+            if (srcIndex + i > len) {
+                this.length -= cnt;
+                return this;
+            }
+            let srcBit = this.get(srcIndex + i);
+            this.set(destIndex + i, srcBit);
+            ++start;
+        }
+        // special case check here for we exactly ended after that block boundary
+        // and thus have nothing more to do
+        if (start + cnt > len) {
+            this.length -= cnt;
+            return this;
+        }
+
+        // the removal location is now perfectly aligned with a block boundary
+        // so we are always filling whole dest blocks
+        // and there are more existing bits to copy down
+        let {i: destBlock, bit: destBit} = this.getPos(start);
+
+        // FIXME: DEBUG code, to be removed
+        // verify we are on a block boundary
+        if (destBit !== 0) {
+            throw new Error('Expected to be perfectly aligned on a block boundary');
+        }
+
+        let {i: srcBlock, bit: srcBit, mask: srcMask} = this.getPos(start + cnt);
+        const {i: lastBlock} = this.getPos(len);
+
+        const data = this[kDataName];
+
+        // lowBits are the bits in the first block that shouldn't get shifted
+        const lowBitMask = srcMask - 1;                             // bits below the mask bit
+        const lowBitClearMask = ~lowBitMask & signBitMask;          // how to clear lowBits
+
+        /*  Steps in the loop:
+            1) Get high bits from srcBlock into val
+            2) Shift them down to start of block
+            3) ++srcBlock
+            4) If srcBlock still less than lastBlock,
+            5) Get low bits from srcBlock into temp
+            6) Shift lowbits to end of block
+            7) Merge lowbits from temp into val
+            8) Assign val into destBlock
+        */
+
+
+        // while still more srcBlocks to copy from, loop
+        let val, lowBits;
+        while (srcBlock <= lastBlock) {
+            // Step 1 - get high bits from srcBlock
+            val = data[srcBlock] & lowBitClearMask;
+
+            // Step 2 - shift high bits down to start of block
+            val >>>= srcBit;
+
+            // Step 3 - increment srcBlock
+            ++srcBlock;
+
+            // Step 4 - Verify still more blocks to go
+            if (srcBlock <= lastBlock) {
+                // Step 5 - Get low bits from srcBlock
+                lowBits = data[srcBlock] & lowBitMask;
+
+                // Step 6 - Shift lowbits to end of block
+                lowBits = (lowBits << (bitsPerUnit - srcBit)) & signBitMask;
+
+                // Step 7 - Merge lowbits into val
+                val |= lowBits;
+            }
+            // Step 8 - Assign val into destBlock
+            data[destBlock] = val;
+            ++destBlock;
+        }
+        // update length to reflect the bits we removed
+        this.length -= cnt;
+        return this;
+    }
+
     // insert bits into the array by moving all the bits after the insertion point up
     // accepts an array of booleans as the data argument
     // insertData can be null, an Array of Booleans or another BitArray
-    // insertIndex is the index in insertData to start inserting from
+    // insertIndex is the index in insertData to start inserting from - this allows you
+    // to insert a portion of one BitArray into another
     _insert(start, cnt, insertData = null, insertIndex = 0) {
         if (cnt === 0) return this;
         if (start < 0) {
