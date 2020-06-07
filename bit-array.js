@@ -327,8 +327,9 @@ class BitArray {
         }
         let b = speciesCreate(this, BitArray);         // create empty bitArray that we will populate
         // set size of new BitArray
-        b.set(end - begin - 1, 0);
+        b.length = end - begin;
 
+        // this could be sped up a bunch
         for (let j = 0, i = begin; i < end; j++, i++) {
             b.set(j, this.get(i));
         }
