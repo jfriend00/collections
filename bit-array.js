@@ -227,18 +227,7 @@ class BitArray {
             return undefined;
         }
         const val = this.get(0);
-        // now we have to move every block down by one bit
-        const data = this[kDataName];
-        let lowBit;
-        for (let i = 0; i < data.length; i++) {
-            lowBit = data[i] & 1;           // save lowBit
-            data[i] >>>= 1;                 // zero-fill right shift
-            // put lowBit into previous block
-            if (i !== 0 && lowBit) {
-                data[i - 1] |= highBitMask;    // this bit will have been previous zero-filled
-            }
-        }
-        --this.length;
+        this._remove(0, 1);
         return val;
     }
 
@@ -355,39 +344,7 @@ class BitArray {
         return cntr;
     }
 
-    // remove bits from the array by copying all the bits after the removed
-    // spot down by cnt spaces
     _remove(start, cnt) {
-        const len = this.length;
-        // if start is past the end of cnt is zero, nothing to do
-        if (start >= len || cnt === 0) {
-            return this;
-        }
-        if (cnt < 0) {
-            throw new TypeError('cnt passed to _remove() must not be negative');
-        }
-        if (start < 0) {
-            throw new RangeError(`start passed to _remove() must not be negative`);
-        }
-        // if trying to remove past the end, then just truncate the end,
-        // no copying necessary
-        if (start + cnt > len) {
-            this.length = start;
-            return this;
-        }
-        let src = start + cnt;
-        let dest = start;
-        while (src < len) {
-            this.set(dest, this.get(src));
-            ++src;
-            ++dest;
-        }
-        // shrink the array for the removed bits
-        this.length = len - cnt;
-        return this;
-    }
-
-    _remove_new(start, cnt) {
         const len = this.length;
         // if start is past the end of cnt is zero, nothing to do
         if (start >= len || cnt === 0) {
@@ -436,13 +393,6 @@ class BitArray {
         // so we are always filling whole dest blocks
         // and there are more existing bits to copy down
         let {i: destBlock, bit: destBit} = this.getPos(start);
-
-        // FIXME: DEBUG code, to be removed
-        // verify we are on a block boundary
-        if (destBit !== 0) {
-            throw new Error('Expected to be perfectly aligned on a block boundary');
-        }
-
         let {i: srcBlock, bit: srcBit, mask: srcMask} = this.getPos(start + cnt);
         const {i: lastBlock} = this.getPos(len);
 
@@ -463,6 +413,10 @@ class BitArray {
             8) Assign val into destBlock
         */
 
+        // Note: we do not have to worry about clearing previously used
+        // bits at the end because setting .length to a smaller number
+        // will do that for us in the last block and any other unused
+        // blocks are removed from the array
 
         // while still more srcBlocks to copy from, loop
         let val, lowBits;

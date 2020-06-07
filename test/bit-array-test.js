@@ -389,22 +389,18 @@ function testRemovePerformance() {
     if (!debugOn) return;
     let r = makeRandomBitArray(10_000_000);
 
+    let b = new BitArray(r);
+    let m2 = new Bench().markBegin();
+    b._remove(0,1);
+    m2.markEnd();
+
     let a = new BitArray(r);
     let m1 = new Bench().markBegin();
     a.shift();
     m1.markEnd();
 
-    let b = new BitArray(r);
-    let m3 = new Bench().markBegin();
-    b._remove(0,1);
-    m3.markEnd();
 
-    let c = new BitArray(r);
-    let m2 = new Bench().markBegin();
-    c._insert(0, 1, [true]);
-    m2.markEnd();
-
-    console.log(`shift: ${m1.formatMs(3)}, _remove: ${m3.formatMs(3)}, _remove_new ${m2.formatMs(3)}`);
+    console.log(`shift: ${m1.formatMs(3)}, _remove: ${m2.formatMs(3)}`);
 }
 
 
@@ -550,7 +546,7 @@ function testNewRemove(specificTestToRun = -1) {
 
     function runRemoveTest([cArg, index, cnt, expectedResult, name]) {
         let b = new BitArray(cArg);
-        b._remove_new(index, cnt);
+        b._remove(index, cnt);
         if (typeof expectedResult === "string") {
             let str = b.toString();
             if (str !== expectedResult) {
@@ -594,9 +590,9 @@ testToJson();
 testLength();
 testToBooleanArray();
 testNewInsert();
-testInsertPerformance();
-
 testNewRemove();
-testRemovePerformance();
+
+//testInsertPerformance();
+//testRemovePerformance();
 
 console.log('BitArray tests passed');
