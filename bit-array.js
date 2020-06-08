@@ -706,6 +706,62 @@ class BitArray {
             }
         }
     }
+
+    _op(src, callback) {
+        if (!(src instanceof BitArray)) {
+            throw new Error('Must pass a BitArray object from the same realm');
+        }
+        const data1 = this[kDataName];
+        const data2 = src[kDataName];
+        let maxLen;
+        let minLen;
+        let longerData;
+        if (data1.length >= data2.length) {
+            maxLen = data1.length;
+            minLen = data2.length;
+            longerData = data1;
+        } else {
+            maxLen = data2.length;
+            minLen = data1.length;
+            longerData = data2;
+        }
+        const newData = new Array(maxLen);
+        for (let i = 0; i < minLen; i++) {
+            newData[i] = callback(data1[i], data2[i]);
+        }
+        // one of the arrays is not long enough for more comparison
+        for (let i = minLen; i < maxLen; i++) {
+            if (i < data1.length) {
+                newData[i] = callback(data1[i], 0);
+            } else {
+                newData[i] = callback(0, data2[i]);
+            }
+        }
+        return speciesCreate(this, BitArray, {length: Math.max(this.length, src.length), data: newData});
+    }
+
+    // do a logical or between two bitArrays
+    // returns a new bitArray
+    // If the two bitArrays are not the same length, then the result will
+    // be as long as the longest of the two and any missing bits in the
+    // shorter one will be assumed to be zero
+    or(src) {
+        return this._op(src, function(data1, data2) {
+            return data1 | data2;
+        });
+    }
+
+    and(src) {
+        return this._op(src, function(data1, data2) {
+            return data1 & data2;
+        });
+    }
+
+    xor(src) {
+        return this._op(src, function(data1, data2) {
+            return data1 ^ data2;
+        });
+    }
 }
 
 module.exports = { BitArray };

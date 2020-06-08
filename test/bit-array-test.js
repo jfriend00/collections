@@ -612,6 +612,69 @@ function testNewRemove(specificTestToRun = -1) {
     }
 }
 
+function testOr() {
+    const table = [
+        // [v1, v2, result, name]
+        ['0001', '1000', '1001', 'same length OR'],
+        ['0001', '10000', '10001', 'different length OR'],
+        ['00001', '1000', '01001', 'different length OR'],
+        ['1', '100000000000000000000000000000000000', '100000000000000000000000000000000001', 'different length OR'],
+    ];
+
+    for (let [v1, v2, result, name] of table) {
+        let a = new BitArray(v1);
+        let b = new BitArray(v2);
+        let c = a.or(b);
+        assert(c.toString() === result, `.or(): Expecting ${result}, found ${c.toString()}, ${name}`);
+    }
+}
+
+function testAnd() {
+    const table = [
+        // [v1, v2, result, name]
+        ['0001', '1000', '0000', 'same length AND'],
+        ['0001', '10000', '00000', 'different length AND'],
+        ['00001', '1000', '00000', 'different length AND'],
+        ['0001', '10000', '00000', 'different length AND'],
+        ['00001', '1000', '00000', 'different length AND'],
+        ['1', '100000000000000000000000000000000001', '000000000000000000000000000000000001', 'different length AND'],
+        ['10000000000000000000100000000000000100000000000000000001',
+                             '100000000000000000000000000000000001',
+         '00000000000000000000100000000000000000000000000000000001', 'different length AND'],
+    ];
+
+    for (let [index, [v1, v2, result, name]] of table.entries()) {
+        let a = new BitArray(v1);
+        let b = new BitArray(v2);
+        let c = a.and(b);
+        assert(c.toString() === result, `.and(): Expecting ${result}, found ${c.toString()}, #${index}:${name}`);
+    }
+}
+
+function testXor() {
+    const table = [
+        // [v1, v2, result, name]
+        ['0001', '1000', '1001', 'same length'],
+        ['0001', '10000', '10001', 'different length'],
+        ['00001', '1000', '01001', 'different length'],
+        ['0001', '10001', '10000', 'different length'],
+        ['00001', '1111', '01110', 'different length'],
+        ['1', '100000000000000000000000000000000011',
+              '100000000000000000000000000000000010', 'different length'],
+        ['10000000000000000000100000000000000100000000000000000001',
+                             '100000000000000000000000000000000001',
+         '10000000000000000000000000000000000100000000000000000000', 'different length'],
+    ];
+
+    for (let [index, [v1, v2, result, name]] of table.entries()) {
+        name = name || "";
+        let a = new BitArray(v1);
+        let b = new BitArray(v2);
+        let c = a.xor(b);
+        assert(c.toString() === result, `.xor(): Expecting ${result}, found ${c.toString()}, #${index}:${name}`);
+    }
+}
+
 
 testPushPop();
 testFill();
@@ -637,6 +700,9 @@ testLength();
 testToBooleanArray();
 testNewInsert();
 testNewRemove();
+testOr();
+testAnd();
+testXor();
 
 //testInsertPerformance();
 //testRemovePerformance();
