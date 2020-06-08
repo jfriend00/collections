@@ -18,8 +18,14 @@ if (process.argv.length >= 2) {
         case "u":
             type = "Uint32Array";
             break;
+        case "i":
+            type = "BigInt";
+            break;
+        case "bi":
+            type = "BigUint64Array";
+            break;
         default:
-            console.log('Invalid command line argument.  Use a, b or u');
+            console.log('Invalid command line argument.  Use a, b, u, i, bi');
             process.exit(1);
     }
 }
@@ -43,6 +49,22 @@ if (type === "BitArray") {
     bytesPerUnit = 4;
     b = new Uint32Array(Math.ceil(len/unitsPer));
     b.fill(1);
+} else if (type === "BigInt") {
+    len = 10_000_000;
+    unitsPer = 256;
+    bytesPerUnit = 256 / 8;
+    b = new Array(Math.ceil(len/unitsPer));
+    b.fill(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn);    // 256 bits
+    //console.log(b[0].toString(2), b[0].toString(2).length);
+    //console.log((b[0] & 0xFFFFFFFFFFFFn).toString(2), (b[0] & 0xFFFFFFFFFFFFn).toString(2).length);
+} else if (type === "BigUint64Array") {
+    len = 10_000_000;
+    unitsPer = 64;
+    bytesPerUnit = 8;
+    b = new Array(Math.ceil(len/unitsPer));
+    b.fill(0xFFFFFFFFFFFFFFFFn);    // 64 bits
+    //console.log(b[0].toString(2), b[0].toString(2).length);
+    //console.log((b[0] & 0xFFFFFFFFFFFFn).toString(2), (b[0] & 0xFFFFFFFFFFFFn).toString(2).length);
 }
 
 let m2 = process.memoryUsage();
@@ -52,7 +74,7 @@ const externalUsed = m2.external - m1.external;
 
 console.log(`Type = ${type}`);
 console.log(`Expected memory Usage: ${addCommas(Math.ceil(len / unitsPer) * bytesPerUnit)}`);
-if (heapUsed > 20000) {
+ if (heapUsed > 20000) {
     console.log(`Delta memory heapUsed: ${addCommas(heapUsed)}`);
     console.log(`Units per byte (heap): ${addCommas((len / heapUsed).toFixed(2))}`);
 } else {
