@@ -7,7 +7,7 @@ const signBitMask = ~(1 << bitsPerUnit);            // used for clearing sign bi
 
 function verifyBoolean(target) {
     if (typeof target !== "boolean") {
-        throw new TypeError('bitArray.indexes(boolean) must be passed a boolean');
+        throw new TypeError('argument must be a boolean');
     }
 }
 
@@ -119,8 +119,6 @@ class BitArray {
         const data = this[kDataName];
         let { i, mask, bit } = this.getPos(len - 1);
 
-        // in this last block, clear any bits above our last bit
-        data[i] &= ((mask * 2) - 1);
 
         // now see if the internal array needs to grow or shrink to fit new length
         let lastBlock = data.length - 1;
@@ -135,6 +133,8 @@ class BitArray {
                 data[j] = 0;
             }
         }
+        // in this last block, clear any bits above our last bit
+        data[i] &= ((mask * 2) - 1);
     }
 
     // calculate bit position
