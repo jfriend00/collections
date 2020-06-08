@@ -709,7 +709,7 @@ class BitArray {
 
     _op(src, callback) {
         if (!(src instanceof BitArray)) {
-            throw new Error('Must pass a BitArray object from the same realm');
+            throw new Error('Must pass a BitArray object and it must be from the same class installation');
         }
         const data1 = this[kDataName];
         const data2 = src[kDataName];
