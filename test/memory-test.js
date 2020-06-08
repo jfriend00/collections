@@ -30,6 +30,12 @@ if (process.argv.length >= 2) {
     }
 }
 
+// Conclusion from running this is that Uint32Array could be 2x more storage efficient
+// because Numbers are 64 bits, but we can only use 32 bits due to limitations on bitwise operations
+// But, Uint32Array is not resizable so we'd have to reallocated and copy any time we
+// want to change size.  That is less than desirable.  Also, Uint32Array are stored in "external"
+// memory instead of the regular heap, not sure what consequences that has.
+
 let len, b, unitsPer, bytesPerUnit;
 if (type === "BitArray") {
     len = 10_000_000;
@@ -51,11 +57,16 @@ if (type === "BitArray") {
     b.fill(1);
 } else if (type === "BigInt") {
     len = 10_000_000;
-    unitsPer = 256;
-    bytesPerUnit = 256 / 8;
-    b = new Array(Math.ceil(len/unitsPer));
-    b.fill(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn);    // 256 bits
-    //console.log(b[0].toString(2), b[0].toString(2).length);
+    unitsPer = 64;
+    bytesPerUnit = 64 / 8;
+    let blen = Math.ceil(len/unitsPer);
+    b = new Array(blen);
+    let n = 0xFFFFFFFFFFFFFFFFn;
+    for (let i = 0; i < blen; i++) {
+        b[i] = n++;
+    }
+    console.log(b[0].toString(2), b[0].toString(2).length);
+    console.log(b[b.length - 1].toString(2), b[b.length - 1].toString(2).length);
     //console.log((b[0] & 0xFFFFFFFFFFFFn).toString(2), (b[0] & 0xFFFFFFFFFFFFn).toString(2).length);
 } else if (type === "BigUint64Array") {
     len = 10_000_000;
@@ -74,7 +85,7 @@ const externalUsed = m2.external - m1.external;
 
 console.log(`Type = ${type}`);
 console.log(`Expected memory Usage: ${addCommas(Math.ceil(len / unitsPer) * bytesPerUnit)}`);
- if (heapUsed > 20000) {
+if (heapUsed > externalUsed) {
     console.log(`Delta memory heapUsed: ${addCommas(heapUsed)}`);
     console.log(`Units per byte (heap): ${addCommas((len / heapUsed).toFixed(2))}`);
 } else {
