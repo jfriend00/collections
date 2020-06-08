@@ -25,8 +25,8 @@ if (debugOn) {
 
 function makeRandomBitArray(testLen = 2000) {
     // create random assorted of booleans in an array
-    let zeroes = (new Array(testLen / 2)).fill(false);
-    let ones = (new Array(testLen / 2)).fill(true);
+    let zeroes = (new Array(Math.floor(testLen / 2))).fill(false);
+    let ones = (new Array(Math.floor(testLen / 2))).fill(true);
     let r = ArrayEx.shuffle(zeroes.concat(ones));
     let b = new BitArray();
     for (let [index, val] of r.entries()) {
@@ -675,6 +675,43 @@ function testXor() {
     }
 }
 
+function testAllBitwise() {
+    ["and", "or", "xor"].forEach(op => {
+        const totalCases = 1000;
+        const mediumLength = 100;
+        for (let k = 0; k < totalCases; k++) {
+            // vary which one is biased longer
+            const aOffset = k < (totalCases / 2) ? 50: 0;
+            const bOffset = k < (totalCases / 2) ? 0: 50;
+            // generate random lengths
+            const len1 = Math.floor(Math.random() * mediumLength) + aOffset;
+            const len2 = Math.floor(Math.random() * mediumLength) + bOffset;
+            // create the bitArrays
+            const a = makeRandomBitArray(len1);
+            const b = makeRandomBitArray(len2);
+            const c = a[op](b);
+            assert(c.length === Math.max(a.length, b.length), `Result length, not correct, ${a.length} !== ${b.length}`);
+            for (let [index, bit] of c.entries()) {
+                const aVal = index < a.length ? a.get(index) : false;
+                const bVal = index < b.length ? b.get(index) : false;
+                let r;
+                switch(op) {
+                    case "and":
+                        r = aVal && bVal;
+                        break;
+                    case "or":
+                        r = aVal || bVal;
+                        break;
+                    case "xor":
+                        r = !!(Number(aVal) ^ Number(bVal));
+                        break;
+                }
+                assert(bit === r, `${bit} !== ${r}, index ${index}, op ${op}\n${a.toString(2)}\n${b.toString(2)}`);
+            }
+        }
+    });
+}
+
 
 testPushPop();
 testFill();
@@ -703,6 +740,7 @@ testNewRemove();
 testOr();
 testAnd();
 testXor();
+testAllBitwise();
 
 //testInsertPerformance();
 //testRemovePerformance();
