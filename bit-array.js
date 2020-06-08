@@ -228,6 +228,7 @@ class BitArray {
                 data[startBlock] &= mask;
             }
             ++startBlock;
+            // intervening blocks (if any) get filled to all one bit value
             let fillValue = value ? allBitsOn : 0;
             while (startBlock < endBlock) {
                 data[startBlock++] = fillValue;
