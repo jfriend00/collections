@@ -190,16 +190,65 @@ class BitArray {
     // fill bitArray or range of bitArray with true/false
     // will grow the array as needed
     // returns bitArray to allow chaining
-    // Note: If you just want to grow the array and have it initialized to false, you can just
-    // set the .length property as this will initalize any new bits to false automatically
-    // and it's a lot more efficient
+    // Fills from start to end (not inclusive of the end index)
+    // end defaults to the end of the bitArray
+    // Note, bits in a bitArray are already initialized to false, so if you just increase
+    // the length of the bitArray, those new bits will already be initialized to false
     fill(value, start = 0, end = this.length) {
         if (start < 0 || start > end) {
             throw new RangeError('for bitArray.fill(value, start, end) start must be positive and less than or equal to end');
         }
-        for (let i = start; i < end; i++) {
-            this.set(i, value);
+        if (end > this.length) {
+            this.length = end;
         }
+        const data = this[kDataName];
+        let {i:startBlock, bit: startBit, mask: startMask} = this.getPos(start);
+        let {i:endBlock, bit: endBit, mask: endMask} = this.getPos(end);
+
+        // if start and end block are the same, just do it bit by bit
+        if (startBlock === endBlock) {
+            for (let i = start; i < end; i++) {
+                this.set(i, value);
+            }
+        } else {
+            // fill the rest of startBlock
+            if (value) {
+                // turn on bits at startBit and higher
+                // where startMask is  000001000
+                // make a mask like    111111000
+                // so we can OR it in and turn on all the bits at or above startBit
+                let mask = allBitsOn - ((2 ** startBit) - 1);
+                data[startBlock] |= mask;
+            } else {
+                // turn off bits at startBit and higher
+                // where startMask is  000001000
+                // make a mask like    000000111
+                // so we can AND it and turn off all the bits at or above startBit
+                let mask = startMask - 1
+                data[startBlock] &= mask;
+            }
+            ++startBlock;
+            let fillValue = value ? allBitsOn : 0;
+            while (startBlock < endBlock) {
+                data[startBlock++] = fillValue;
+            }
+            if (value) {
+                // turn on bits lower than endBit
+                // so if endMask is 00001000
+                // make a mask for  00000111
+                // so we can OR those bits on
+                let mask = endMask - 1;
+                data[startBlock] |= mask;
+            } else {
+                // turn off bits lower than endBit
+                // so if endMask is 00001000
+                // make a mask for  11111000
+                // so we can AND it to clear the low bits
+                let mask = allBitsOn - (endMask - 1);
+                data[endBlock] &= mask;
+            }
+        }
+
         return this;
     }
 

@@ -92,18 +92,64 @@ function testPushPop() {
 }
 
 function testFill() {
-    let b = new BitArray();
-    const lowFill = 10;
-    const highFill = 100;
-    b.fill(true, lowFill, highFill);
-    checkExtraSpace(b);
-    for (let i = 0; i < highFill; i++) {
-        let val = b.get(i);
-        if (i < lowFill) {
-            assert(val === false, `Expecting value below fill to be false, found ${val}`);
-        } else if (i < highFill) {
-            assert(val === true, `Expecting value in fill to be true, found ${val}`);
+    // We need to cover these conditions:
+    // 1) Fill within a single block
+    // 2) Fill from within one block to within the next block
+    // 3) Fill from within one block to a much higher block
+    // 4) Fill while causing bitArray to grow
+    // 5) Fill starting on first bit of block
+    // 6) Fill starting on last bit of block
+    // 7) Fill ending on first bit of block
+    // 8) Fill ending on last bit of block
+    // 9) Fill false in an array of true
+    // 10) Fill true in an array of false
+
+    function verify(b, low, high, fillTarget, name) {
+        checkExtraSpace(b);
+        for (let i = 0; i < b.length; i++) {
+            let val = b.get(i);
+            if (i < low) {
+                assert(val === !fillTarget, `Expecting value below fill to be ${!fillTarget}, found ${val}: ${name}`);
+            } else if (i < high) {
+                assert(val === fillTarget, `Expecting value in fill to be ${fillTarget}, found ${val}: ${name}`);
+            } else {
+                assert(val === !fillTarget, `Expecting value outside fill are to be ${!fillTarget}, found ${val}: ${name}`);
+            }
         }
+    }
+    const table = [
+        // automatically created arrays will be filled with the opposite value from the fillVal
+        // to make them easier to test and to be able to see all boundary cases
+        // low, high, length, fillVal, name
+        [0, 1, 0, true, 'fill first bit to true'],
+        [0, 1, 0, false, 'fill first bit to false'],
+        [0, 1, 100, true, 'fill first bit to false with initial length'],
+        [0, 1, 100, false, 'fill first bit to false with initial length'],
+        [2, 10, 100, true, 'fill true within first block'],
+        [2, 10, 100, false, 'fill false within first block'],
+        [2, 32, 100, true, 'fill true within first block, ending on last bit'],
+        [2, 32, 100, false, 'fill false within first block, ending on last bit'],
+        [2, 40, 100, true, 'fill true across two neighboring blocks'],
+        [2, 40, 100, false, 'fill false across two neighboring blocks'],
+        [2, 120, 125, true, 'fill true across across multiple blocks'],
+        [2, 120, 125, false, 'fill false across across multiple blocks'],
+    ];
+
+    for (const [low, high, length, fillVal, name] of table) {
+        // create the array
+        let b = new BitArray();
+        b.length = length;
+
+        // if testing false, manually fill the bitArray to true
+        if (!fillVal) {
+            let len = Math.max(length, high);
+            for (let i = 0; i < len; i++) {
+                b.set(i, true);
+            }
+        }
+
+        b.fill(fillVal, low, high);
+        verify(b, low, high, fillVal, name);
     }
 }
 
