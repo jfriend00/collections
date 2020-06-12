@@ -1,4 +1,6 @@
 const { speciesCreate } = require('./utils.js');
+const { UArray } = require('./uarray.js');
+
 const bitsPerUnit = 31;
 const allBitsOn = 0b1111111111111111111111111111111;
 // const highUsableBit = 1 << (bitsPerUnit - 1);
@@ -39,7 +41,7 @@ class BitArray {
     constructor(initial) {
         // create non-enumerable length and data properties
         Object.defineProperty(this, kLenName, {value: 0, writable: true});
-        Object.defineProperty(this, kDataName, {value: [], writable: true});
+        Object.defineProperty(this, kDataName, {value: new UArray(1000), writable: true});
 
         if (typeof initial === "undefined") {
             return;
@@ -74,7 +76,7 @@ class BitArray {
             // If we have access to the internal data (via our semi-private properties), then
             //   use those as a shortcut for cloning
             if (initial[kDataName]) {
-                this[kDataName] = initial[kDataName].slice();
+                this[kDataName] = new UArray(initial[kDataName]);
                 this[kLenName] = initial.length;
             } else {
                 // if other BitArray was somehow loaded separately and thus has different symbols,
@@ -97,7 +99,12 @@ class BitArray {
                    throw new RangeError(`Incoming array of data contains a value ${val} that exceeds ${bitsPerUnit} bits in position ${index}`);
                }
            }
-           this[kDataName] = initial.data.slice();
+           // make sure UArray is big enough, then copy data over
+           const data = this[kDataName].ensureLength(initial.data.length);
+           for (let i = 0; i < initial.data.length; i++) {
+               data[i] = initial.data[i];
+           }
+
            this.length = initial.length;
         } else {
             throw new TypeError('Invalid arguments to constructor');
@@ -116,9 +123,15 @@ class BitArray {
     set length(len) {
         // update internal length
         this[kLenName] = len;
-        const data = this[kDataName];
-        let { i, mask, bit } = this.getPos(len - 1);
+        if (len === 0) {
+            this[kDataName].ensureLength(0);
+            return;
+        }
 
+        let { i, mask, bit } = this.getPos(len - 1);
+        const data = this[kDataName].ensureLength(i);
+
+        /*
 
         // now see if the internal array needs to grow or shrink to fit new length
         let lastBlock = data.length - 1;
@@ -133,6 +146,7 @@ class BitArray {
                 data[j] = 0;
             }
         }
+        */
         // in this last block, clear any bits above our last bit
         data[i] &= ((mask * 2) - 1);
     }
@@ -155,7 +169,7 @@ class BitArray {
             throw new RangeError('bounds error on BitArray');
         }
         const {i, mask} = this.getPos(index);
-        return !!(this[kDataName][i] & mask);
+        return !!(this[kDataName].data[i] & mask);
     }
 
     // Set bit value by index
@@ -167,15 +181,7 @@ class BitArray {
             throw new RangeError('bounds error on BitArray');
         }
         const {i, mask} = this.getPos(index);
-        const data = this[kDataName];
-        // auto-grow data to fit
-        // see if we need to add onto the data array
-        if (i >= data.length) {
-            // fill new bit positions with zeroes
-            for (let q = data.length; q < i; q++) {
-                data.push(0);
-            }
-        }
+        const data = this[kDataName].ensureLength(i);
         if (val) {
             data[i] |= mask;
         } else {
@@ -201,7 +207,7 @@ class BitArray {
         if (end > this.length) {
             this.length = end;
         }
-        const data = this[kDataName];
+        const data = this[kDataName].data;
         let {i:startBlock, bit: startBit, mask: startMask} = this.getPos(start);
         let {i:endBlock, bit: endBit, mask: endMask} = this.getPos(end);
 
@@ -323,7 +329,10 @@ class BitArray {
     //
     // Note: The bitArray constructor will accept this object when creating a BitArray.
     toArray() {
-        return {data: this[kDataName].slice(), length: this.length};
+        let obj = {data: Array.from(this[kDataName].data), length: this.length};
+        // truncate array to actual length
+        obj.data.length = Math.ceil(this.length / bitsPerUnit);
+        return obj;
     }
 
     // return an array of booleans that contains identical values to the bitArray
@@ -447,7 +456,7 @@ class BitArray {
         let {i: srcBlock, bit: srcBit, mask: srcMask} = this.getPos(start + cnt);
         const {i: lastBlock} = this.getPos(len);
 
-        const data = this[kDataName];
+        const data = this[kDataName].data;
 
         // lowBits are the bits in the first block that shouldn't get shifted
         const lowBitMask = srcMask - 1;                             // bits below the mask bit
@@ -539,7 +548,7 @@ class BitArray {
         let deltaBits = cnt % bitsPerUnit;
 
         const {i: startBlock, bit, mask} = this.getPos(start);
-        const data = this[kDataName];
+        const data = this[kDataName].data;
 
         // lowBits are the bits in the first block that shouldn't get shifted
         const lowBitMask = mask - 1;                                // bits below the mask bit
@@ -711,8 +720,8 @@ class BitArray {
         if (!(src instanceof BitArray)) {
             throw new Error('Must pass a BitArray object and it must be from the same class installation');
         }
-        const data1 = this[kDataName];
-        const data2 = src[kDataName];
+        const data1 = this[kDataName].data;
+        const data2 = src[kDataName].data;
         let maxLen;
         let minLen;
         let longerData;

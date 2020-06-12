@@ -356,7 +356,8 @@ function testRemove() {
     b._remove(31, 62);
     let d = b.toArray();
     assert(d.length === 62, `_remove(): Expecting length of 62, got ${d.length}`);
-    assert(d.data.length === 2 && d.data[0] === allBitsOn && d.data[1] === allBitsOn, `_remove(): Expecting allBitsOn in both data blocks`);
+    assert(d.data.length === 2, `_remove(): Expecting length of 2, got ${d.data.length}`);
+    assert(d.data[0] === allBitsOn && d.data[1] === allBitsOn, `_remove(): Expecting allBitsOn in both data blocks`);
 
 }
 
