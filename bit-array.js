@@ -329,10 +329,13 @@ class BitArray {
     //
     // Note: The bitArray constructor will accept this object when creating a BitArray.
     toArray() {
-        let obj = {data: Array.from(this[kDataName].data), length: this.length};
-        // truncate array to actual length
-        obj.data.length = Math.ceil(this.length / bitsPerUnit);
-        return obj;
+        const array = new Array(Math.ceil(this.length / bitsPerUnit));
+
+        const data = this[kDataName].data;
+        for (let i = 0, len = array.length; i < len; i++) {
+            array[i] = data[i];
+        }
+        return {data: array, length: this.length};
     }
 
     // return an array of booleans that contains identical values to the bitArray
