@@ -65,8 +65,8 @@ if (type === "BitArray") {
     for (let i = 0; i < blen; i++) {
         b[i] = n++;
     }
-    console.log(b[0].toString(2), b[0].toString(2).length);
-    console.log(b[b.length - 1].toString(2), b[b.length - 1].toString(2).length);
+    //console.log(b[0].toString(2), b[0].toString(2).length);
+    //console.log(b[b.length - 1].toString(2), b[b.length - 1].toString(2).length);
     //console.log((b[0] & 0xFFFFFFFFFFFFn).toString(2), (b[0] & 0xFFFFFFFFFFFFn).toString(2).length);
 } else if (type === "BigUint64Array") {
     len = 10_000_000;
