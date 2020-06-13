@@ -42,14 +42,13 @@ class UArray {
             return data;
         }
     }
+    // ensure we have at least this much length in the array
+    // will grow the array in chunks, only when nessary
     ensureLength(len) {
         let delta = len - this.length;
         if (delta > 0) {
             // array is not big enough, grow it by ditherAmount
             this.length = len + this.ditherAmount;
-        } else if (delta < -this.ditherAmount) {
-            // array is too big, downsize it
-            this.length = len;
         }
         return this.data;
     }

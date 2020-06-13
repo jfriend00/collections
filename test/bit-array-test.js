@@ -713,6 +713,24 @@ function testAllBitwise() {
     });
 }
 
+function testSetGet() {
+    const falseBits = [1000, 1050, 1100, 10_100];
+    const trueBits = [100, 1049, 1051, 1099, 1101, 9999];
+
+    let b = new BitArray();
+    b.fill(1, 0, 10_000);
+    assert(b.get(1) === true, `testSetGet() failed, expecting bit 1 to be true, was false`);
+    for (let i of falseBits) {
+        b.set(i, false);
+    }
+    for (let i of falseBits) {
+        assert(b.get(i) === false, `testSetGet() failed, expecting bit ${i} to be false, was true`);
+    }
+    for (let i of trueBits) {
+        assert(b.get(i) === true, `testSetGet() failed, expecting bit ${i} to be true, was false`);
+    }
+}
+
 
 testPushPop();
 testFill();
@@ -742,6 +760,7 @@ testOr();
 testAnd();
 testXor();
 testAllBitwise();
+testSetGet();
 
 //testInsertPerformance();
 //testRemovePerformance();

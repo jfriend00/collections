@@ -183,10 +183,16 @@ function testRandoms(num, options = {}) {
 
     if (options.useArrayEx) {
         for (let item of p.randoms(options)) {
+            if (q.has(item)) {
+                assert.fail(`.randoms(): returned ${item}, but that was already returned earlier`);
+            }
             q.add(item);
         }
     } else {
         for (let item of ArrayEx.randoms(p, options)) {
+            if (q.has(item)) {
+                assert.fail(`.randoms(): returned ${item}, but that was already returned earlier`);
+            }
             q.add(item);
         }
     }

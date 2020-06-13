@@ -41,7 +41,7 @@ class BitArray {
     constructor(initial) {
         // create non-enumerable length and data properties
         Object.defineProperty(this, kLenName, {value: 0, writable: true});
-        Object.defineProperty(this, kDataName, {value: new UArray(1000), writable: true});
+        Object.defineProperty(this, kDataName, {value: new UArray(), writable: true});
 
         if (typeof initial === "undefined") {
             return;
@@ -58,6 +58,7 @@ class BitArray {
 
             // now initialize all the true values
             let index = 0;
+            this[kDataName].ensureLength(initial.length);
             for (let i = initial.length - 1; i >= 0; i--) {
                 let chr = initial.charAt(i);
                 if (chr === "1") {
@@ -149,6 +150,14 @@ class BitArray {
         */
         // in this last block, clear any bits above our last bit
         data[i] &= ((mask * 2) - 1);
+    }
+
+    // trim any extra storage out of the Uint32Array
+    // If it needs to change size, it will have to reallocate and copy the underlying Uint32Array
+    trim() {
+        const data = this[kDataName];
+        let neededLength = Math.ceil(this.length / bitsPerUnit);
+        data.length = neededLength;
     }
 
     // calculate bit position
