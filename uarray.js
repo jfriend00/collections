@@ -1,6 +1,6 @@
 const kInitialLength = 100;
 
-// this is a wrapper around a Uint32Array that lets you resize it (by reallocating and copying)
+// This is a wrapper around a Uint32Array that lets you resize it (by reallocating and copying)
 // constructor can be:
 //   new UArray(len)
 //   new UArray(len, options)
@@ -42,8 +42,11 @@ class UArray {
             return data;
         }
     }
-    // ensure we have at least this much length in the array
+    // Ensure we have at least this much length in the array
     // will grow the array in chunks, only when nessary
+    // callers must be aware that the data property on this object
+    // may change when this is called.
+    // Returns current data property value.
     ensureLength(len) {
         let delta = len - this.length;
         if (delta > 0) {

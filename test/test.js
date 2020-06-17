@@ -1,3 +1,4 @@
+'use strict';
 const { MapSet, MapArray, SortedArray } = require('../index.js');
 const { rand } = require('../utils.js');
 const assert = require('assert').strict;

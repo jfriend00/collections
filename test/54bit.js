@@ -1,3 +1,4 @@
+'use strict';
 // test out 54 bit operations
 
 const hiDivisor = 0x80000000;

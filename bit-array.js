@@ -1,3 +1,4 @@
+'use strict';
 const { speciesCreate } = require('./utils.js');
 const { UArray } = require('./uarray.js');
 

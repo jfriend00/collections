@@ -1,3 +1,4 @@
+'use strict';
 const { mix, mixStatic, speciesCreate } = require('./utils.js');
 const { BitArray } = require('./bit-array.js');
 // environment variable that turns debug tracing on
